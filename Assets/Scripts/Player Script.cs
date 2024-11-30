@@ -227,8 +227,6 @@ public class PlayerScript : MonoBehaviour
         {
             rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
         }
-
-        grounded = colliders.Any();
     }
 
     public void OnLookInput(InputAction.CallbackContext context)
@@ -313,14 +311,12 @@ public class PlayerScript : MonoBehaviour
     }
     
     bool allowGroundSlam;
-    bool lastFrameGrounded;
+    bool wasGrounded;
 
     void LandingThings(Collision other)
     {
-        if (!lastFrameGrounded && grounded)
+        if (grounded && !wasGrounded)
         {
-            lastFrameGrounded = true;
-
             Debug.Log("Play land anim");
             camAnim.Play("Land", StringToIndex("Land Layer"), 0.0f);
             if (crouching && allowGroundSlam)
@@ -363,8 +359,8 @@ public class PlayerScript : MonoBehaviour
                 }
             }
         }
-        else
-            lastFrameGrounded = !lastFrameGrounded && grounded;
+
+        wasGrounded = grounded;
     }
 
     void DoGroundedThings(Collision other)
@@ -387,6 +383,7 @@ public class PlayerScript : MonoBehaviour
                 colliders.Add(other.collider);
             }
         }
+        grounded = colliders.Any();
     }
 
     ISet<Collider> colliders = new HashSet<Collider>();
@@ -395,6 +392,8 @@ public class PlayerScript : MonoBehaviour
     void OnCollisionExit(Collision other) 
     {
         colliders.Remove(other.collider);
+        grounded = colliders.Any();
+        wasGrounded = grounded;
     }
 
     public void OnCrouchInput(InputAction.CallbackContext context)
