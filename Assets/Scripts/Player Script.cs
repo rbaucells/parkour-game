@@ -114,8 +114,6 @@ public class PlayerScript : MonoBehaviour
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;
     
-
-
     void Awake()
     {
         // Get components
