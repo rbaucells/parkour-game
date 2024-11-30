@@ -264,8 +264,6 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-
-
     void Move()
     {
         currentSpeed = rig.velocity.magnitude;
