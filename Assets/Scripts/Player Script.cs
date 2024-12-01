@@ -69,8 +69,6 @@ public class PlayerScript : MonoBehaviour
 
     private bool crouching;
     public float crouchTransitionTime;
-    
-    [Space(10)]
 
     private float defaultCamHeight;
     private float defaultColHeight;
@@ -80,11 +78,15 @@ public class PlayerScript : MonoBehaviour
     [HideInInspector] public float curColHeight;
     [HideInInspector] public float curColCenter;
 
+    [Space(10)]
+
     public float crouchTargetCamHeight;
     public float crouchTargetColHeight;
     public float crouchTargetColCenter;
 
     public AnimationCurve crouchCurve;
+
+    [Space(10)]
 
     [Tooltip("Add onto down and up force")] public float crouchForcesAddPerSlam;
     public float timeToResetCrouchForces;
@@ -102,11 +104,11 @@ public class PlayerScript : MonoBehaviour
 
     private bool allowGroundSlam;
     private float lastGroundSlamTime;
-
+    [Header("Explode")]
     public float groundSlamExplodeRadius;
     public float groundSlamExplodeForce;
     public float groundSlamExplodeUpForce;
-
+    [Header("Implode")]
     public float groundSlamImplodeRadius;
     public float groundSlamImplodeForce;
 

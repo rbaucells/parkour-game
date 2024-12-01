@@ -7512,14 +7512,14 @@ MonoBehaviour:
   timeToResetCrouchForces: 4
   crouchDownForce: 20
   maxCrouchDownForce: 175
-  groundSlamAction: 0
+  groundSlamAction: 1
   groundSlamUpForce: 70
   maxGroundSlamUpForce: 225
-  groundSlamExplodeRadius: 10
+  groundSlamExplodeRadius: 6
   groundSlamExplodeForce: 750
   groundSlamExplodeUpForce: 200
-  groundSlamImplodeRadius: 10
-  groundSlamImplodeForce: 750
+  groundSlamImplodeRadius: 6
+  groundSlamImplodeForce: 50
   speedText: {fileID: 645401587}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: e1b08032bec16ba4eb1ae23cbd572664, type: 3}
 --- !u!1660057539 &9223372036854775807
