@@ -69,6 +69,10 @@ public class PlayerScript : MonoBehaviour
     private float groundSlamTime;
     private float defaultGroundSlamUpFore;
 
+    public float groundSlamExplodeRadius;
+    public float groundSlamExplodeForce;
+    public float groundSlamExplodeUpForce;
+    
     [Space(5)]
 
     private float defaultCamHeight;
@@ -359,9 +363,22 @@ public class PlayerScript : MonoBehaviour
                     rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse); 
                     allowGroundSlam = false;    
                 }
+                GroundSlamExplode();
             }
         }
         wasGrounded = grounded;
+    }
+
+    void GroundSlamExplode()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamExplodeRadius);
+        foreach (var collider in colliders)
+        {
+            if (collider.gameObject.GetComponent<Rigidbody>() != null)
+            {
+                collider.gameObject.GetComponent<Rigidbody>().AddExplosionForce(groundSlamExplodeForce, transform.position, groundSlamExplodeRadius, groundSlamExplodeUpForce);
+            }
+        }
     }
 
     void CheckIfGrounded(Collision other)

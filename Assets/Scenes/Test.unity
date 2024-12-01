@@ -7483,6 +7483,9 @@ MonoBehaviour:
   timeToResetCrouchForces: 4
   maxGroundSlamUpForce: 225
   maxCrouchDownForce: 175
+  groundSlamExplodeRadius: 10
+  groundSlamExplodeForce: 750
+  groundSlamExplodeUpForce: 200
   curCamHeight: 0
   curColHeight: 0
   curColRadius: 0
