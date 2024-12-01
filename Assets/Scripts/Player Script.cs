@@ -8,17 +8,29 @@ using UnityEditor.EditorTools;
 
 public class PlayerScript : MonoBehaviour
 {
+    public enum CrouchType
+    {
+        Hold,
+        Toggle
+    };
+
+    public enum GroundSlamAction
+    {
+        Explode,
+        Implode
+    };
+
     [Header("Camera")]
     public float controllerLookSens;
     public float mouseLookSens;
-    
+
     private float lookSenseToUse;
 
     [Tooltip("Up and Down Rotation")] public float maxX;
     [Tooltip("Up and Down Rotation")] public float minX;
 
     [HideInInspector] public float curCameraX; // Up and Down
-    
+
     private Vector2 deltaMouseValue;
 
     [Header("Movement")]
@@ -52,53 +64,51 @@ public class PlayerScript : MonoBehaviour
     private int remainingAirJumps;
 
     [Header("Crouching")]
+    public CrouchType crouchType;
+    private string crouchString;
+
     private bool crouching;
     public float crouchTransitionTime;
-
-    public float crouchDownForce;
-    public float groundSlamUpForce;
-
-    [Tooltip("Add onto down and up force")] public float crouchForcesAddPerSlam;
-    private float defaultCrouchDownForce;
-    public float timeToResetCrouchForces;
-
-    public float maxGroundSlamUpForce;
-    public float maxCrouchDownForce;
-
-    private bool allowGroundSlam;
-    private float groundSlamTime;
-    private float defaultGroundSlamUpFore;
-
-    public float groundSlamExplodeRadius;
-    public float groundSlamExplodeForce;
-    public float groundSlamExplodeUpForce;
     
-    [Space(5)]
+    [Space(10)]
 
     private float defaultCamHeight;
     private float defaultColHeight;
-    private float defaultColRadius;
     private float defaultColCenter;
 
     [HideInInspector] public float curCamHeight;
     [HideInInspector] public float curColHeight;
-    [HideInInspector] public float curColRadius;
     [HideInInspector] public float curColCenter;
 
-    public float targetCamHeight;
-    public float targetColHeight;
-    public float targetColRadius;
-    public float targetColCenter;
+    public float crouchTargetCamHeight;
+    public float crouchTargetColHeight;
+    public float crouchTargetColCenter;
 
     public AnimationCurve crouchCurve;
 
-    public enum CrouchType
-    {
-        Hold,
-        Toggle
-    };
-    public CrouchType crouchType;
-    private string crouchString;
+    [Tooltip("Add onto down and up force")] public float crouchForcesAddPerSlam;
+    public float timeToResetCrouchForces;
+    private float defaultCrouchDownForce;
+    public float crouchDownForce;
+    public float maxCrouchDownForce;
+
+    [Header("Ground Slam")]
+    public GroundSlamAction groundSlamAction;
+    private string groundSlamActionString;
+
+    private float defaultGroundSlamUpForce;
+    public float groundSlamUpForce;
+    public float maxGroundSlamUpForce;
+
+    private bool allowGroundSlam;
+    private float lastGroundSlamTime;
+
+    public float groundSlamExplodeRadius;
+    public float groundSlamExplodeForce;
+    public float groundSlamExplodeUpForce;
+
+    public float groundSlamImplodeRadius;
+    public float groundSlamImplodeForce;
 
     [Header("References")]
     public TextMeshProUGUI speedText;
@@ -119,6 +129,7 @@ public class PlayerScript : MonoBehaviour
         InitializeComponents();
         SetDefaults();
         SetCrouchType();
+        SetGroundSlamAction();
     }
 
     void InitializeComponents()
@@ -138,22 +149,25 @@ public class PlayerScript : MonoBehaviour
     {
         defaultCamHeight = cameraContainer.transform.localPosition.y;
         defaultColHeight = capsuleCollider.height;
-        defaultColRadius = capsuleCollider.radius;
         defaultColCenter = capsuleCollider.center.y;
 
         curCamHeight = defaultCamHeight;
         curColHeight = defaultColHeight;
-        curColRadius = defaultColRadius;
         curColCenter = defaultColCenter;
 
         defaultMoveForce = moveForce;
         defaultCrouchDownForce = crouchDownForce;
-        defaultGroundSlamUpFore = groundSlamUpForce;
+        defaultGroundSlamUpForce = groundSlamUpForce;
     }
 
     void SetCrouchType()
     {
         crouchString = crouchType == CrouchType.Hold ? "Hold" : "Toggle";
+    }
+
+    void SetGroundSlamAction()
+    {
+        groundSlamActionString = groundSlamAction == GroundSlamAction.Explode ? "Explode" : "Implode";
     }
 
     void Start()
@@ -210,6 +224,11 @@ public class PlayerScript : MonoBehaviour
         speedText.text = "Current Speed: " + Mathf.RoundToInt(new Vector3(currentXSpeed, currentYSpeed, currentZSpeed).magnitude) + "m/s";
         // Apply Gravity Force
         rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
+
+        if (grounded)
+        {
+            allowGroundSlam = false;
+        }
     }
 
     void CrouchingDownForce()
@@ -242,7 +261,6 @@ public class PlayerScript : MonoBehaviour
     {
         cameraContainer.transform.localPosition = new Vector3(0, curCamHeight, 0);
         capsuleCollider.height = curColHeight;
-        capsuleCollider.radius = curColRadius;
         capsuleCollider.center = Vector3.up * curColCenter;
     }
     public void OnLookInput(InputAction.CallbackContext context)
@@ -250,7 +268,7 @@ public class PlayerScript : MonoBehaviour
         // Store look value
         deltaMouseValue = context.ReadValue<Vector2>();
     }
-    
+
     void Camera()
     {
         // Rotate the Camera
@@ -297,7 +315,7 @@ public class PlayerScript : MonoBehaviour
             // If we are grounded, jump like normal
             if (grounded)
             {
-                rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse); 
+                rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
                 camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
             }
             // If we jump while not grounded. Jump and remove one AirJump
@@ -311,7 +329,7 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-    void OnCollisionEnter(Collision other) 
+    void OnCollisionEnter(Collision other)
     {
         CheckIfGrounded(other);
         LandingAndGroundSlam(other);
@@ -327,7 +345,7 @@ public class PlayerScript : MonoBehaviour
             {
                 Instantiate(groundSlamParticleSystem, other.GetContact(0).point, Quaternion.identity);
 
-                if (Time.time - groundSlamTime <= timeToResetCrouchForces)
+                if (Time.time - lastGroundSlamTime <= timeToResetCrouchForces)
                 {
                     crouchDownForce += crouchForcesAddPerSlam;
                     crouchDownForce = Mathf.Clamp(crouchDownForce, 0, maxCrouchDownForce);
@@ -337,33 +355,36 @@ public class PlayerScript : MonoBehaviour
                 else
                 {
                     crouchDownForce = defaultCrouchDownForce;
-                    groundSlamUpForce = defaultGroundSlamUpFore;
+                    groundSlamUpForce = defaultGroundSlamUpForce;
                 }
 
-                groundSlamTime = Time.time;
+                lastGroundSlamTime = Time.time;
 
                 if (moveValue.x > 0)
                 {
                     Debug.Log("Right Slam");
                     camAnim.Play("Ground Slam Right", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
                     rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse);
-                    allowGroundSlam = false;    
+                    allowGroundSlam = false;
                 }
                 else if (moveValue.x < 0)
                 {
                     Debug.Log("Left Slam");
                     camAnim.Play("Ground Slam Left", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
-                    rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse);  
-                    allowGroundSlam = false;    
+                    rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse);
+                    allowGroundSlam = false;
                 }
                 else
                 {
                     Debug.Log("Middle Slam");
                     camAnim.Play("Ground Slam Middle", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
-                    rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse); 
-                    allowGroundSlam = false;    
+                    rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse);
+                    allowGroundSlam = false;
                 }
-                GroundSlamExplode();
+                if (groundSlamActionString == "Explode")
+                    GroundSlamExplode();
+                else
+                    GroundSlamImplode();
             }
         }
         wasGrounded = grounded;
@@ -381,15 +402,28 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
+    void GroundSlamImplode()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamImplodeRadius);
+        foreach (var collider in colliders)
+        {
+            if (collider.gameObject.GetComponent<Rigidbody>() != null)
+            {
+                collider.gameObject.GetComponent<Rigidbody>().AddForce((transform.position - collider.transform.position).normalized * groundSlamImplodeForce, ForceMode.Impulse);
+            }    
+        }
+    }
+
     void CheckIfGrounded(Collision other)
     {
         // Define Array
-        var contactPoints =  new ContactPoint[other.contactCount];
+        var contactPoints = new ContactPoint[other.contactCount];
         other.GetContacts(contactPoints);
         // Transform.pos.y for World Space. curColCenter as col offset. Half of height is distance from center to feet
-        var feetYLevel = (transform.position.y + curColCenter) - curColHeight/2;
+        var feetYLevel = (transform.position.y + curColCenter) - curColHeight / 2;
         // Check if any contact point is close to feetYLevel
-        for(int i = 0; i < contactPoints.Length; i++) {
+        for (int i = 0; i < contactPoints.Length; i++)
+        {
             if (Mathf.Abs(contactPoints[i].point.y - feetYLevel) < feetTolerance)
             {
                 colliders.Add(other.collider);
@@ -398,7 +432,7 @@ public class PlayerScript : MonoBehaviour
         grounded = colliders.Any();
     }
 
-    void OnCollisionExit(Collision other) 
+    void OnCollisionExit(Collision other)
     {
         colliders.Remove(other.collider);
         grounded = colliders.Any();
@@ -411,7 +445,7 @@ public class PlayerScript : MonoBehaviour
         if (context.phase == InputActionPhase.Performed)
         {
             if (!grounded)
-                allowGroundSlam = true;    
+                allowGroundSlam = true;
             if (crouchString == "Hold")
             {
                 Crouch();
@@ -437,11 +471,10 @@ public class PlayerScript : MonoBehaviour
     void Crouch()
     {
         StopAllCoroutines();
-        StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, targetCamHeight, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, targetColHeight, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, targetColRadius, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, targetColCenter, crouchCurve, crouchTransitionTime));
-        crouching = true;   
+        StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, crouchTargetCamHeight, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, crouchTargetColHeight, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, crouchTargetColCenter, crouchCurve, crouchTransitionTime));
+        crouching = true;
     }
 
     void UnCrouch()
@@ -449,9 +482,8 @@ public class PlayerScript : MonoBehaviour
         StopAllCoroutines();
         StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime));
         StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, defaultColHeight, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, defaultColRadius, crouchCurve, crouchTransitionTime));
         StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, defaultColCenter, crouchCurve, crouchTransitionTime));
-        crouching = false;  
+        crouching = false;
     }
 
     public void OnReloadInput(InputAction.CallbackContext context)
@@ -487,16 +519,16 @@ public class PlayerScript : MonoBehaviour
     public void DoFireAnim(string size)
     {
         // Play corresponding firing animation
-        switch(size)
+        switch (size)
         {
             case "Small":
-                camAnim.Play("Small Fire", camAnim.GetLayerIndex("Small Fire"), 0.0f);  
+                camAnim.Play("Small Fire", camAnim.GetLayerIndex("Small Fire"), 0.0f);
                 break;
             case "Medium":
-                camAnim.Play("Medium Fire", camAnim.GetLayerIndex("Medium Fire"), 0.0f);  
+                camAnim.Play("Medium Fire", camAnim.GetLayerIndex("Medium Fire"), 0.0f);
                 break;
             case "Big":
-                camAnim.Play("Big Fire", camAnim.GetLayerIndex("Big Fire"), 0.0f);  
+                camAnim.Play("Big Fire", camAnim.GetLayerIndex("Big Fire"), 0.0f);
                 break;
         }
     }

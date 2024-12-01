@@ -7476,24 +7476,14 @@ MonoBehaviour:
   jumpForce: 45
   gravityForce: 55
   maxAirJumps: 1
+  crouchType: 0
   crouchTransitionTime: 0.2
-  crouchDownForce: 20
-  groundSlamUpForce: 70
-  crouchForcesAddPerSlam: 25
-  timeToResetCrouchForces: 4
-  maxGroundSlamUpForce: 225
-  maxCrouchDownForce: 175
-  groundSlamExplodeRadius: 10
-  groundSlamExplodeForce: 750
-  groundSlamExplodeUpForce: 200
   curCamHeight: 0
   curColHeight: 0
-  curColRadius: 0
   curColCenter: 0
-  targetCamHeight: 0
-  targetColHeight: 1.25
-  targetColRadius: 0.5
-  targetColCenter: -0.375
+  crouchTargetCamHeight: 0
+  crouchTargetColHeight: 1.25
+  crouchTargetColCenter: -0.375
   crouchCurve:
     serializedVersion: 2
     m_Curve:
@@ -7518,7 +7508,18 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  crouchType: 0
+  crouchForcesAddPerSlam: 25
+  timeToResetCrouchForces: 4
+  crouchDownForce: 20
+  maxCrouchDownForce: 175
+  groundSlamAction: 0
+  groundSlamUpForce: 70
+  maxGroundSlamUpForce: 225
+  groundSlamExplodeRadius: 10
+  groundSlamExplodeForce: 750
+  groundSlamExplodeUpForce: 200
+  groundSlamImplodeRadius: 10
+  groundSlamImplodeForce: 750
   speedText: {fileID: 645401587}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: e1b08032bec16ba4eb1ae23cbd572664, type: 3}
 --- !u!1660057539 &9223372036854775807
