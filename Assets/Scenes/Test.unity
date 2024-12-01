@@ -7465,29 +7465,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b790e8f2e0a5dde4486c119ef53b0080, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  curCameraX: 0
-  minX: -85
-  maxX: 85
   controllerLookSens: 7
   mouseLookSens: 0.2
-  cameraContainer: {fileID: 891919486772408319}
-  camAnim: {fileID: 2985901841639486075}
-  moveAccel: 100
-  gravity: 55
-  speedIncreasePerSecond: 5
+  maxX: 85
+  minX: -85
+  curCameraX: 0
+  moveForce: 100
+  moveForceIncreasePerSecond: 5
   absoluteMaxSpeed: 35
   jumpForce: 45
+  gravityForce: 55
   maxAirJumps: 1
-  grounded: 0
-  targetCamHeight: 0
-  targetColHeight: 1.25
-  targetColRadius: 0.5
-  targetColCenter: -0.375
   crouchTransitionTime: 0.2
+  crouchDownForce: 20
+  groundSlamUpForce: 70
+  crouchForcesAddPerSlam: 25
+  timeToResetCrouchForces: 4
+  maxGroundSlamUpForce: 225
+  maxCrouchDownForce: 175
   curCamHeight: 0
   curColHeight: 0
   curColRadius: 0
   curColCenter: 0
+  targetCamHeight: 0
+  targetColHeight: 1.25
+  targetColRadius: 0.5
+  targetColCenter: -0.375
   crouchCurve:
     serializedVersion: 2
     m_Curve:
@@ -7513,14 +7516,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   crouchType: 0
-  crouchDownForce: 25
-  crouchForcesAddPerSlam: 15
-  groundSlamUpForce: 60
-  timeToResetCrouchForces: 4
-  maxGroundSlamUpForce: 200
-  maxCrouchDownForce: 150
   speedText: {fileID: 645401587}
-  capsuleCollider: {fileID: 2066441950984618856}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: e1b08032bec16ba4eb1ae23cbd572664, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

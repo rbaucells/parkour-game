@@ -12,7 +12,7 @@ public class ExplosionRandomSound : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
 
         audioSource.clip = audioClips[Random.Range(0, audioClips.Length)];
-
+        
         audioSource.Play();
     }
 }

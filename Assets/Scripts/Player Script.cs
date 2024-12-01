@@ -4,126 +4,134 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
 using System.Linq;
+using UnityEditor.EditorTools;
 
 public class PlayerScript : MonoBehaviour
 {
-    public enum CrouchType
-    {
-        Hold,
-        Toggle
-    };
-
     [Header("Camera")]
-    private Vector2 lookValue;
-    [HideInInspector]
-    public float curCameraX;
-
-    public float minX;
-    public float maxX;
-
-    private float defaultMinX;
-    private float defaultMaxX;
-
-    private float lookSens;
     public float controllerLookSens;
     public float mouseLookSens;
+    
+    private float lookSenseToUse;
 
-    public Transform cameraContainer;
+    [Tooltip("Up and Down Rotation")] public float maxX;
+    [Tooltip("Up and Down Rotation")] public float minX;
 
-    public Animator camAnim;
+    [HideInInspector] public float curCameraX; // Up and Down
+    
+    private Vector2 deltaMouseValue;
 
     [Header("Movement")]
-    public float moveAccel;
-    
-    private Vector2 moveValue;
-    private Rigidbody rig;
+    public float moveForce;
+    private float defaultMoveForce;
 
-    private float currentSpeed;
+    private Vector2 moveValue; // Current Keyboard/Controller input
 
     private float currentXSpeed;
+    private float currentYSpeed;
     private float currentZSpeed;
-
-    public float gravity;
 
     private const float movementThreshold = 0.1f;
 
-    public float speedIncreasePerSecond;
+    public float moveForceIncreasePerSecond;
     public float absoluteMaxSpeed;
 
-    private float defaultMoveAccel;
+    [Header("Ground Check")]
+    private bool grounded = false;
+    private bool wasGrounded;
+
+    private ISet<Collider> colliders = new HashSet<Collider>();
+    private const float feetTolerance = 0.3f;
 
     [Header("Jumping")]
-    public float jumpForce;
 
-    public float maxAirJumps;
-    private float remainingAirJumps;
-    public bool grounded = false;
+    public float jumpForce;
+    public float gravityForce;
+
+    public int maxAirJumps;
+    private int remainingAirJumps;
 
     [Header("Crouching")]
+    private bool crouching;
+    public float crouchTransitionTime;
+
+    public float crouchDownForce;
+    public float groundSlamUpForce;
+
+    [Tooltip("Add onto down and up force")] public float crouchForcesAddPerSlam;
+    private float defaultCrouchDownForce;
+    public float timeToResetCrouchForces;
+
+    public float maxGroundSlamUpForce;
+    public float maxCrouchDownForce;
+
+    private bool allowGroundSlam;
+    private float groundSlamTime;
+    private float defaultGroundSlamUpFore;
+
+    [Space(5)]
+
     private float defaultCamHeight;
     private float defaultColHeight;
     private float defaultColRadius;
     private float defaultColCenter;
+
+    [HideInInspector] public float curCamHeight;
+    [HideInInspector] public float curColHeight;
+    [HideInInspector] public float curColRadius;
+    [HideInInspector] public float curColCenter;
 
     public float targetCamHeight;
     public float targetColHeight;
     public float targetColRadius;
     public float targetColCenter;
 
-    public float crouchTransitionTime;
-
-    [HideInInspector]
-    public float curCamHeight;
-    [HideInInspector]
-    public float curColHeight;
-    [HideInInspector]
-    public float curColRadius;
-    [HideInInspector]
-    public float curColCenter;
-
     public AnimationCurve crouchCurve;
 
+    public enum CrouchType
+    {
+        Hold,
+        Toggle
+    };
     public CrouchType crouchType;
     private string crouchString;
 
-    private bool crouching;
-
-    public float crouchDownForce;
-    private float defaultCrouchDownForce;
-    public float crouchForcesAddPerSlam;
-
-    public float groundSlamUpForce;
-
-    private bool disableGroundPound;
-    private float groundSlamTime;
-    public float timeToResetCrouchForces;
-    private float defaultGroundSlamUpFore;
-
-    public float maxGroundSlamUpForce;
-    public float maxCrouchDownForce;
-
-    [Header("Other Things")]
+    [Header("References")]
     public TextMeshProUGUI speedText;
 
-    public CapsuleCollider capsuleCollider;
-
+    private CapsuleCollider capsuleCollider;
+    private Transform cameraContainer;
+    private Animator camAnim;
+    private Rigidbody rig;
     [Header("Weapons")]
     private GameObject[] gunScripts;
     private PlayerInput playerInput;
     private InputAction fire;
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;
-    
+
     void Awake()
     {
-        // Get components
+        InitializeComponents();
+        SetDefaults();
+        SetCrouchType();
+    }
+
+    void InitializeComponents()
+    {
         playerInput = GetComponent<PlayerInput>();
         rig = GetComponent<Rigidbody>();
-        // Define fire InputAction
-        fire = playerInput.actions["Shoot"];
+        capsuleCollider = GetComponent<CapsuleCollider>();
 
         gunScripts = GameObject.FindGameObjectsWithTag("Gun");
+        cameraContainer = GameObject.Find("Camera Container").transform;
+        camAnim = cameraContainer.GetComponent<Animator>();
 
+        fire = playerInput.actions["Shoot"];
+    }
+
+    void SetDefaults()
+    {
         defaultCamHeight = cameraContainer.transform.localPosition.y;
         defaultColHeight = capsuleCollider.height;
         defaultColRadius = capsuleCollider.radius;
@@ -134,42 +142,32 @@ public class PlayerScript : MonoBehaviour
         curColRadius = defaultColRadius;
         curColCenter = defaultColCenter;
 
-        SetCrouchType();
-
-        defaultMoveAccel = moveAccel;
+        defaultMoveForce = moveForce;
         defaultCrouchDownForce = crouchDownForce;
         defaultGroundSlamUpFore = groundSlamUpForce;
     }
+
     void SetCrouchType()
     {
-        switch (crouchType)
-        {
-            case CrouchType.Hold:
-                crouchString = "Hold";
-                break;
-            case CrouchType.Toggle:
-                crouchString = "Toggle";
-                break;
-        }
+        crouchString = crouchType == CrouchType.Hold ? "Hold" : "Toggle";
     }
 
     void Start()
     {
-        // Lock Cursor
         Cursor.lockState = CursorLockMode.Locked;
-
+        // Every 3 Seconds, Check for input change
         InvokeRepeating(nameof(CheckIfInputChange), 0.0f, 3f);
     }
 
     void CheckIfInputChange()
     {
         if (Gamepad.all.Count > 0)
-            lookSens = controllerLookSens;
+            lookSenseToUse = controllerLookSens;
         else
-            lookSens = mouseLookSens;
+            lookSenseToUse = mouseLookSens;
     }
 
-    void ResetJumps()
+    void ResetAirJumps()
     {
         // If grounded, reset air jumps
         if (grounded)
@@ -180,11 +178,10 @@ public class PlayerScript : MonoBehaviour
 
     void LateUpdate()
     {
-        // Move the Camera
-        CameraLook();
+        Camera();
     }
 
-    void FixedUpdate()
+    void AutoFire()
     {
         // If we are holding down button
         if (fire.IsPressed())
@@ -195,19 +192,32 @@ public class PlayerScript : MonoBehaviour
                 gunScript.FullAutoFire();
             }
         }
-        // Move the player
+    }
+    void FixedUpdate()
+    {
+        AutoFire();
         Move();
-        // Update Speedometer Text
-        speedText.text = "Current Speed: " + Mathf.RoundToInt(currentSpeed) + "m/s";
-        // Check to reset Jumps
-        ResetJumps();
-        rig.AddForce(Vector3.down * gravity, ForceMode.Acceleration);
+        ResetAirJumps();
+        UpdateCrouchingThings();
+        WalkingAnimAndMoveForce();
+        CrouchingDownForce();
 
-        cameraContainer.transform.localPosition = new Vector3(0, curCamHeight, 0);
-        capsuleCollider.height = curColHeight;
-        capsuleCollider.radius = curColRadius;
-        capsuleCollider.center = Vector3.up * curColCenter;
+        // Speedometer Text
+        speedText.text = "Current Speed: " + Mathf.RoundToInt(new Vector3(currentXSpeed, currentYSpeed, currentZSpeed).magnitude) + "m/s";
+        // Apply Gravity Force
+        rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
+    }
 
+    void CrouchingDownForce()
+    {
+        if (crouching && !grounded)
+        {
+            rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
+        }
+    }
+
+    void WalkingAnimAndMoveForce()
+    {
         Vector3 horizontalVelocity = new Vector3(rig.velocity.x, 0, rig.velocity.z);
 
         bool isMoving = horizontalVelocity.magnitude > movementThreshold;
@@ -216,34 +226,36 @@ public class PlayerScript : MonoBehaviour
 
         if (isMoving && horizontalVelocity.magnitude < absoluteMaxSpeed)
         {
-            moveAccel += 0.02f * speedIncreasePerSecond;
+            moveForce += 0.02f * moveForceIncreasePerSecond;
         }
         else if (!isMoving)
         {
-            moveAccel = defaultMoveAccel;
-        }
-
-        if (crouching && !grounded)
-        {
-            rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
+            moveForce = defaultMoveForce;
         }
     }
 
+    void UpdateCrouchingThings()
+    {
+        cameraContainer.transform.localPosition = new Vector3(0, curCamHeight, 0);
+        capsuleCollider.height = curColHeight;
+        capsuleCollider.radius = curColRadius;
+        capsuleCollider.center = Vector3.up * curColCenter;
+    }
     public void OnLookInput(InputAction.CallbackContext context)
     {
         // Store look value
-        lookValue = context.ReadValue<Vector2>();
+        deltaMouseValue = context.ReadValue<Vector2>();
     }
-
-    void CameraLook()
+    
+    void Camera()
     {
         // Rotate the Camera
-        curCameraX += lookValue.y * lookSens;
+        curCameraX += deltaMouseValue.y * lookSenseToUse;
         curCameraX = Mathf.Clamp(curCameraX, minX, maxX);
 
         cameraContainer.localEulerAngles = new Vector3(-curCameraX, 0, 0);
 
-        transform.eulerAngles += new Vector3(0, lookValue.x * lookSens, 0);
+        transform.eulerAngles += new Vector3(0, deltaMouseValue.x * lookSenseToUse, 0);
     }
 
     public void OnMoveInput(InputAction.CallbackContext context)
@@ -262,22 +274,15 @@ public class PlayerScript : MonoBehaviour
 
     void Move()
     {
-        currentSpeed = rig.velocity.magnitude;
+        currentYSpeed = rig.velocity.y;
         currentXSpeed = rig.velocity.x;
         currentZSpeed = rig.velocity.z;
         // Define player movement
         Vector3 move = transform.forward * moveValue.y + transform.right * moveValue.x;
         // Multiply Move Acceleration
-        move *= moveAccel;
+        move *= moveForce;
         // Add the force
         rig.AddForce(move, ForceMode.Acceleration);
-    }
-
-    bool ReadyToAnim(string layerName)
-    {
-        // Return true if no other anim playing
-        int layerIndex = camAnim.GetLayerIndex(layerName);
-        return camAnim.GetCurrentAnimatorStateInfo(layerIndex).normalizedTime > 1 && !camAnim.IsInTransition(layerIndex);
     }
 
     public void OnJumpInput(InputAction.CallbackContext context)
@@ -288,17 +293,15 @@ public class PlayerScript : MonoBehaviour
             // If we are grounded, jump like normal
             if (grounded)
             {
-                Debug.Log("Jumped");
                 rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse); 
-                camAnim.Play("Jump", StringToIndex("Jump Layer"), 0.0f);
+                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
             }
             // If we jump while not grounded. Jump and remove one AirJump
             else if (remainingAirJumps >= 1)
             {
-                Debug.Log("Airjumped");
                 rig.velocity = new Vector3(rig.velocity.x, 0, rig.velocity.z);
                 rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
-
+                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
                 remainingAirJumps -= 1;
             }
         }
@@ -306,22 +309,20 @@ public class PlayerScript : MonoBehaviour
 
     void OnCollisionEnter(Collision other) 
     {
-        DoGroundedThings(other);
-        LandingThings(other);
+        CheckIfGrounded(other);
+        LandingAndGroundSlam(other);
     }
-    
-    bool allowGroundSlam;
-    bool wasGrounded;
 
-    void LandingThings(Collision other)
+    void LandingAndGroundSlam(Collision other)
     {
-        if (grounded && !wasGrounded)
+        if (grounded && !wasGrounded) // Grounded now but not last frame
         {
-            Debug.Log("Play land anim");
-            camAnim.Play("Land", StringToIndex("Land Layer"), 0.0f);
+            camAnim.Play("Land", camAnim.GetLayerIndex("Land Layer"), 0.0f);
+
             if (crouching && allowGroundSlam)
             {
                 Instantiate(groundSlamParticleSystem, other.GetContact(0).point, Quaternion.identity);
+
                 if (Time.time - groundSlamTime <= timeToResetCrouchForces)
                 {
                     crouchDownForce += crouchForcesAddPerSlam;
@@ -334,60 +335,51 @@ public class PlayerScript : MonoBehaviour
                     crouchDownForce = defaultCrouchDownForce;
                     groundSlamUpForce = defaultGroundSlamUpFore;
                 }
+
                 groundSlamTime = Time.time;
 
                 if (moveValue.x > 0)
                 {
                     Debug.Log("Right Slam");
-                    camAnim.Play("Ground Slam Right", StringToIndex("Slam Layer"), 0.0f);
+                    camAnim.Play("Ground Slam Right", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
                     rig.AddForce(Vector3.up * groundSlamUpForce, ForceMode.Impulse);
                     allowGroundSlam = false;    
                 }
                 else if (moveValue.x < 0)
                 {
                     Debug.Log("Left Slam");
-                    camAnim.Play("Ground Slam Left", StringToIndex("Slam Layer"), 0.0f);
+                    camAnim.Play("Ground Slam Left", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
                     rig.AddForce(Vector3.up * groundSlamUpForce, ForceMode.Impulse);  
                     allowGroundSlam = false;    
                 }
                 else
                 {
                     Debug.Log("Middle Slam");
-                    camAnim.Play("Ground Slam Middle", StringToIndex("Slam Layer"), 0.0f);
+                    camAnim.Play("Ground Slam Middle", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
                     rig.AddForce(Vector3.up * groundSlamUpForce, ForceMode.Impulse); 
                     allowGroundSlam = false;    
                 }
             }
         }
-
         wasGrounded = grounded;
     }
 
-    void DoGroundedThings(Collision other)
+    void CheckIfGrounded(Collision other)
     {
-        // array
+        // Define Array
         var contactPoints =  new ContactPoint[other.contactCount];
-        // contact points
         other.GetContacts(contactPoints);
-
+        // Transform.pos.y for World Space. curColCenter as col offset. Half of height is distance from center to feet
         var feetYLevel = (transform.position.y + curColCenter) - curColHeight/2;
-        Debug.Log(feetYLevel);
-        // loop
+        // Check if any contact point is close to feetYLevel
         for(int i = 0; i < contactPoints.Length; i++) {
-
-            Debug.Log("y: " + contactPoints[i].point.y + ", level: " + feetYLevel + ", tolerance: " + feetTolerance);
-
-            // check position
-            if ( Mathf.Abs(contactPoints[i].point.y - feetYLevel) < feetTolerance)
+            if (Mathf.Abs(contactPoints[i].point.y - feetYLevel) < feetTolerance)
             {
                 colliders.Add(other.collider);
             }
         }
         grounded = colliders.Any();
     }
-
-    ISet<Collider> colliders = new HashSet<Collider>();
-    float feetTolerance = 0.3f;
 
     void OnCollisionExit(Collision other) 
     {
@@ -401,52 +393,52 @@ public class PlayerScript : MonoBehaviour
         // If we crouch on this frame, crouching true. 
         if (context.phase == InputActionPhase.Performed)
         {
-            allowGroundSlam = true;    
+            if (!grounded)
+                allowGroundSlam = true;    
             if (crouchString == "Hold")
             {
-                StopAllCoroutines();
-                StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, targetCamHeight, crouchCurve, crouchTransitionTime));
-                StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, targetColHeight, crouchCurve, crouchTransitionTime));
-                StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, targetColRadius, crouchCurve, crouchTransitionTime));
-                StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, targetColCenter, crouchCurve, crouchTransitionTime));
-                crouching = true;
+                Crouch();
             }
             else
             {
                 if (!crouching)
                 {
-                    StopAllCoroutines();
-                    StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, targetCamHeight, crouchCurve, crouchTransitionTime));
-                    StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, targetColHeight, crouchCurve, crouchTransitionTime));
-                    StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, targetColRadius, crouchCurve, crouchTransitionTime));
-                    StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, targetColCenter, crouchCurve, crouchTransitionTime));
-                    crouching = true;
+                    Crouch();
                 }
                 else
                 {
-                    StopAllCoroutines();
-                    StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime));
-                    StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, defaultColHeight, crouchCurve, crouchTransitionTime));
-                    StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, defaultColRadius, crouchCurve, crouchTransitionTime));
-                    StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, defaultColCenter, crouchCurve, crouchTransitionTime));
-                    crouching = false;
+                    UnCrouch();
                 }
             }
         }
         if (context.phase == InputActionPhase.Canceled && crouchString == "Hold")
         {
-            StopAllCoroutines();
-            StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime));
-            StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, defaultColHeight, crouchCurve, crouchTransitionTime));
-            StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, defaultColRadius, crouchCurve, crouchTransitionTime));
-            StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, defaultColCenter, crouchCurve, crouchTransitionTime));
-            crouching = false;
+            UnCrouch();
         }
+    }
+
+    void Crouch()
+    {
+        StopAllCoroutines();
+        StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, targetCamHeight, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, targetColHeight, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, targetColRadius, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, targetColCenter, crouchCurve, crouchTransitionTime));
+        crouching = true;   
+    }
+
+    void UnCrouch()
+    {
+        StopAllCoroutines();
+        StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, defaultColHeight, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColRadius", curColRadius, defaultColRadius, crouchCurve, crouchTransitionTime));
+        StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, defaultColCenter, crouchCurve, crouchTransitionTime));
+        crouching = false;  
     }
 
     public void OnReloadInput(InputAction.CallbackContext context)
     {
-        // If this is the frame we reload
         if (context.phase == InputActionPhase.Performed)
         {
             foreach (GameObject currentGunObject in gunScripts)
@@ -459,7 +451,6 @@ public class PlayerScript : MonoBehaviour
 
     public void OnFireInput(InputAction.CallbackContext context)
     {
-        // If this is the frame we shoot
         if (context.phase == InputActionPhase.Performed)
         {
             foreach (GameObject currentGunObject in gunScripts)
@@ -478,26 +469,25 @@ public class PlayerScript : MonoBehaviour
 
     public void DoFireAnim(string size)
     {
-        Debug.Log("Going to do FireAnim");
-        if (size == "Small")
+        // Play corresponding firing animation
+        switch(size)
         {
-            Debug.Log("Small Fire Recoil");
-            camAnim.Play("Small Fire", StringToIndex("Small Fire"), 0.0f);
-        }
-        else if (size == "Medium")
-        {
-            Debug.Log("Medium Fire Recoil");
-            camAnim.Play("Medium Fire", StringToIndex("Medium Fire"), 0.0f);
-        }
-        else if (size == "Big")
-        {
-            Debug.Log("Big Fire Recoil");
-            camAnim.Play("Big Fire", StringToIndex("Big Fire"), 0.0f);
+            case "Small":
+                camAnim.Play("Small Fire", camAnim.GetLayerIndex("Small Fire"), 0.0f);  
+                break;
+            case "Medium":
+                camAnim.Play("Medium Fire", camAnim.GetLayerIndex("Medium Fire"), 0.0f);  
+                break;
+            case "Big":
+                camAnim.Play("Big Fire", camAnim.GetLayerIndex("Big Fire"), 0.0f);  
+                break;
         }
     }
 
-    int StringToIndex(string layer)
+    bool camAnimReadyToAnim(string layerName)
     {
-        return camAnim.GetLayerIndex(layer);
+        // Return true if no other anim playing on layer
+        int layerIndex = camAnim.GetLayerIndex(layerName);
+        return camAnim.GetCurrentAnimatorStateInfo(layerIndex).normalizedTime > 1 && !camAnim.IsInTransition(layerIndex);
     }
 }
