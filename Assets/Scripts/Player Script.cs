@@ -342,21 +342,21 @@ public class PlayerScript : MonoBehaviour
                 {
                     Debug.Log("Right Slam");
                     camAnim.Play("Ground Slam Right", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
-                    rig.AddForce(Vector3.up * groundSlamUpForce, ForceMode.Impulse);
+                    rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse);
                     allowGroundSlam = false;    
                 }
                 else if (moveValue.x < 0)
                 {
                     Debug.Log("Left Slam");
                     camAnim.Play("Ground Slam Left", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
-                    rig.AddForce(Vector3.up * groundSlamUpForce, ForceMode.Impulse);  
+                    rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse);  
                     allowGroundSlam = false;    
                 }
                 else
                 {
                     Debug.Log("Middle Slam");
                     camAnim.Play("Ground Slam Middle", camAnim.GetLayerIndex("Slam Layer"), 0.0f);
-                    rig.AddForce(Vector3.up * groundSlamUpForce, ForceMode.Impulse); 
+                    rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse); 
                     allowGroundSlam = false;    
                 }
             }
