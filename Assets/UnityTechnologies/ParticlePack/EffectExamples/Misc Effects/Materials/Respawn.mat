@@ -8,8 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Respawn
-  m_Shader: {fileID: -6465566751694194690, guid: ab11a069516c3be46a4c8185f52a63a7,
-    type: 3}
+  m_Shader: {fileID: 4800000, guid: 77711a0a1ef662843a281ba4ecd2c54c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -155,7 +154,6 @@ Material:
     - _FresnelColor: {r: 1, g: 1, b: 1, a: 1}
     - _NoiseTiling: {r: 0, g: 3, b: 0, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &4814473789692954817
 MonoBehaviour:
   m_ObjectHideFlags: 11

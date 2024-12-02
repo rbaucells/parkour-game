@@ -460,7 +460,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4517907937467018208
 Transform:
   m_ObjectHideFlags: 0
@@ -493,6 +493,7 @@ MonoBehaviour:
   magSize: 30
   fireType: 0
   bulletType: 1
+  damage: 1
   fireRateMin: 720
   fireAnimTime: 0.0833
   useBurst: 1
@@ -505,7 +506,7 @@ MonoBehaviour:
     m_Bits: 55
   attackPoint: {fileID: 5205499792894719066}
   hitForce: 50
-  trailSpeed: 150
+  trailSpeed: 500
   bulletSpeed: 0
   bulletGravity: 0
   bulletObject: {fileID: 0}
@@ -516,6 +517,7 @@ MonoBehaviour:
   muzzleParticleSystem: {fileID: 198234346748616026, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
   impactParticleSystem: {fileID: 1874733766879046132, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
+  recoilSize: 0
 --- !u!82 &3455062946690866116
 AudioSource:
   m_ObjectHideFlags: 0

@@ -38,8 +38,6 @@ public class GunScript : MonoBehaviour
     [Header("Shooting Type")]
     public FireType fireType;
     public BulletType bulletType;
-    private string fireString;
-    private string bulletString;
 
     [Header("Damage")]
     public float damage;
@@ -95,7 +93,7 @@ public class GunScript : MonoBehaviour
         private AudioSource audioSource;
         private PlayerScript playerScript;
         public RecoilSize recoilSize;
-        private string recoilString;
+        private int recoilInt;
 
     void Awake()
     {
@@ -103,8 +101,6 @@ public class GunScript : MonoBehaviour
         anim = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
         // Set Shoot Type from FireType enum
-        SetFireType();
-        SetBulletType();
         SetRecoilSize();
         // Get ShootCenter
         shootCenter = GameObject.Find("Shooter");
@@ -116,44 +112,18 @@ public class GunScript : MonoBehaviour
         playerScript = GetComponentInParent<PlayerScript>();
     }
 
-    void SetFireType()
-    {
-        switch (fireType)
-        {
-            case FireType.Auto:
-                fireString = "Auto";
-                break;
-            case FireType.SemiAuto:
-                fireString = "SemiAuto";
-                break;
-        }
-    }
-
-    void SetBulletType()
-    {
-        switch (bulletType)
-        {
-            case BulletType.Projectile:
-                bulletString = "Projectile";
-                break;
-            case BulletType.Raycast:
-                bulletString = "Raycast";
-                break;
-        }
-    }
-
     void SetRecoilSize()
     {
         switch (recoilSize)
         {
             case RecoilSize.Small:
-                recoilString = "Small";
+                recoilInt = 1;
                 break;
             case RecoilSize.Medium:
-                recoilString = "Medium";
+                recoilInt = 2;
                 break;
             case RecoilSize.Big:
-                recoilString = "Big";
+                recoilInt = 3;
                 break;
         }
     }
@@ -175,13 +145,13 @@ public class GunScript : MonoBehaviour
     public void SemiAutoFire()
     {
         // If SemiAuto selected
-        if (!useBurst && curMag != 0 && fireString == "SemiAuto" && Time.time >= nextFireTime && ReadyToAnim())
+        if (!useBurst && curMag != 0 && fireType == FireType.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
         {
             Shoot();
             return;
         }
 
-        if (!curBursting && useBurst && curMag != 0 && fireString == "SemiAuto" && Time.time >= nextFireTime && ReadyToAnim())
+        if (!curBursting && useBurst && curMag != 0 && fireType == FireType.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
         }
@@ -215,13 +185,13 @@ public class GunScript : MonoBehaviour
     public void FullAutoFire()
     {
         // If SemiAuto selected
-        if (!useBurst && curMag != 0 && fireString == "Auto" && Time.time >= nextFireTime && ReadyToAnim())
+        if (!useBurst && curMag != 0 && fireType == FireType.Auto && Time.time >= nextFireTime && ReadyToAnim())
         {
             Shoot();
             return;
         }
 
-        if (!curBursting && useBurst && curMag != 0 && fireString == "Auto" && Time.time >= nextFireTime && ReadyToAnim())
+        if (!curBursting && useBurst && curMag != 0 && fireType == FireType.Auto && Time.time >= nextFireTime && ReadyToAnim())
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
         }
@@ -239,13 +209,13 @@ public class GunScript : MonoBehaviour
         nextFireTime = Time.time + delayBetweenShots;
         // Play "Fire" animation
         anim.Play("Fire", 0, 0.0f);
-        playerScript.DoFireAnim(recoilString);
+        playerScript.DoFireAnim(recoilInt);
         // Play the audio fireAudio
         audioSource.clip = fireAudio;
         audioSource.Play(0);
         // Particle for Muzzle Flash
         Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity, transform.GetChild(0));
-        if (bulletString == "Raycast")
+        if (bulletType == BulletType.Raycast)
         {
             curMag -= 1;
 
@@ -290,7 +260,7 @@ public class GunScript : MonoBehaviour
                 StartCoroutine(RaycastSpawnTrail(trail, targetPoint, Vector3.zero, false));
             }
         }
-        if (bulletString == "Projectile")
+        if (bulletType == BulletType.Projectile)
         {
             curMag -= 1;
             // Where the crosshair is "looking"
@@ -375,6 +345,7 @@ public class GunScript : MonoBehaviour
         if (useBulletSpread)
         {
             Vector3 spread = new(UnityEngine.Random.Range(-bulletVariance.x, bulletVariance.x), UnityEngine.Random.Range(-bulletVariance.y, bulletVariance.y), 0);
+            
             return ((end + spread) - start).normalized;
         }
         else

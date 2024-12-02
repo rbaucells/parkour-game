@@ -4,8 +4,8 @@ using UnityEngine;
 
 public static class Algorithms {
 
-public static IEnumerator CurveLerp(object instance, string nameOfVariable, float start, float end, AnimationCurve curve, float timeToComplete)
-    {
+    public static IEnumerator CurveLerp(object instance, string nameOfVariable, float start, float end, AnimationCurve curve, float timeToComplete)
+{
         float elapsedTime = 0f;
         float current = 0.0f;
         Debug.Log("Entered Coroutine");
@@ -32,6 +32,7 @@ public static IEnumerator CurveLerp(object instance, string nameOfVariable, floa
         current = Mathf.Lerp(start, end, curve.Evaluate(1));
         field.SetValue(instance, current);
     }
+    
 public static IEnumerator CurveLerpVector3(object instance, string nameOfVariable, AnimationCurve curve, float timeToComplete, Vector3 start, Vector3 end)
     {
         // Get the field or property dynamically

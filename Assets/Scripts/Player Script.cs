@@ -20,6 +20,7 @@ public class PlayerScript : MonoBehaviour
         Implode
     };
 
+    //--------------------Camera--------------------//
     [Header("Camera")]
     public float controllerLookSens;
     public float mouseLookSens;
@@ -33,6 +34,7 @@ public class PlayerScript : MonoBehaviour
 
     private Vector2 deltaMouseValue;
 
+    //--------------------Movement--------------------//
     [Header("Movement")]
     public float moveForce;
     private float defaultMoveForce;
@@ -48,6 +50,7 @@ public class PlayerScript : MonoBehaviour
     public float moveForceIncreasePerSecond;
     public float absoluteMaxSpeed;
 
+    //--------------------Ground Check--------------------//
     [Header("Ground Check")]
     private bool grounded = false;
     private bool wasGrounded;
@@ -55,6 +58,7 @@ public class PlayerScript : MonoBehaviour
     private ISet<Collider> colliders = new HashSet<Collider>();
     private const float feetTolerance = 0.3f;
 
+    //--------------------Jumping--------------------//
     [Header("Jumping")]
 
     public float jumpForce;
@@ -63,9 +67,9 @@ public class PlayerScript : MonoBehaviour
     public int maxAirJumps;
     private int remainingAirJumps;
 
+    //--------------------Crouching--------------------//
     [Header("Crouching")]
     public CrouchType crouchType;
-    private string crouchString;
 
     private bool crouching;
     public float crouchTransitionTime;
@@ -94,9 +98,9 @@ public class PlayerScript : MonoBehaviour
     public float crouchDownForce;
     public float maxCrouchDownForce;
 
+    //--------------------Ground Slam--------------------//
     [Header("Ground Slam")]
     public GroundSlamAction groundSlamAction;
-    private string groundSlamActionString;
 
     private float defaultGroundSlamUpForce;
     public float groundSlamUpForce;
@@ -104,14 +108,19 @@ public class PlayerScript : MonoBehaviour
 
     private bool allowGroundSlam;
     private float lastGroundSlamTime;
+
+    //--------------------Explode--------------------//
     [Header("Explode")]
     public float groundSlamExplodeRadius;
     public float groundSlamExplodeForce;
     public float groundSlamExplodeUpForce;
+
+    //--------------------Implode--------------------//
     [Header("Implode")]
     public float groundSlamImplodeRadius;
     public float groundSlamImplodeForce;
 
+    //--------------------References--------------------//
     [Header("References")]
     public TextMeshProUGUI speedText;
 
@@ -119,10 +128,14 @@ public class PlayerScript : MonoBehaviour
     private Transform cameraContainer;
     private Animator camAnim;
     private Rigidbody rig;
+
+    //--------------------Weapons--------------------//
     [Header("Weapons")]
     private GameObject[] gunScripts;
     private PlayerInput playerInput;
     private InputAction fire;
+
+    //--------------------Effects--------------------//
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;
 
@@ -130,8 +143,6 @@ public class PlayerScript : MonoBehaviour
     {
         InitializeComponents();
         SetDefaults();
-        SetCrouchType();
-        SetGroundSlamAction();
     }
 
     void InitializeComponents()
@@ -160,16 +171,6 @@ public class PlayerScript : MonoBehaviour
         defaultMoveForce = moveForce;
         defaultCrouchDownForce = crouchDownForce;
         defaultGroundSlamUpForce = groundSlamUpForce;
-    }
-
-    void SetCrouchType()
-    {
-        crouchString = crouchType == CrouchType.Hold ? "Hold" : "Toggle";
-    }
-
-    void SetGroundSlamAction()
-    {
-        groundSlamActionString = groundSlamAction == GroundSlamAction.Explode ? "Explode" : "Implode";
     }
 
     void Start()
@@ -383,7 +384,7 @@ public class PlayerScript : MonoBehaviour
                     rig.AddForce(other.GetContact(0).normal * groundSlamUpForce, ForceMode.Impulse);
                     allowGroundSlam = false;
                 }
-                if (groundSlamActionString == "Explode")
+                if (groundSlamAction == GroundSlamAction.Explode)
                     GroundSlamExplode();
                 else
                     GroundSlamImplode();
@@ -429,6 +430,7 @@ public class PlayerScript : MonoBehaviour
             if (Mathf.Abs(contactPoints[i].point.y - feetYLevel) < feetTolerance)
             {
                 colliders.Add(other.collider);
+                break;
             }
         }
         grounded = colliders.Any();
@@ -446,9 +448,10 @@ public class PlayerScript : MonoBehaviour
         // If we crouch on this frame, crouching true. 
         if (context.phase == InputActionPhase.Performed)
         {
-            if (!grounded)
+            if (!grounded) 
                 allowGroundSlam = true;
-            if (crouchString == "Hold")
+
+            if (crouchType == CrouchType.Hold)
             {
                 Crouch();
             }
@@ -464,7 +467,7 @@ public class PlayerScript : MonoBehaviour
                 }
             }
         }
-        if (context.phase == InputActionPhase.Canceled && crouchString == "Hold")
+        if (context.phase == InputActionPhase.Canceled && crouchType == CrouchType.Hold)
         {
             UnCrouch();
         }
@@ -518,24 +521,24 @@ public class PlayerScript : MonoBehaviour
             Application.Quit();
     }
 
-    public void DoFireAnim(string size)
+    public void DoFireAnim(int size)
     {
         // Play corresponding firing animation
         switch (size)
         {
-            case "Small":
+            case 1:
                 camAnim.Play("Small Fire", camAnim.GetLayerIndex("Small Fire"), 0.0f);
                 break;
-            case "Medium":
+            case 2:
                 camAnim.Play("Medium Fire", camAnim.GetLayerIndex("Medium Fire"), 0.0f);
                 break;
-            case "Big":
+            case 3:
                 camAnim.Play("Big Fire", camAnim.GetLayerIndex("Big Fire"), 0.0f);
                 break;
         }
     }
 
-    bool camAnimReadyToAnim(string layerName)
+    bool CamAnimReadyToAnim(string layerName)
     {
         // Return true if no other anim playing on layer
         int layerIndex = camAnim.GetLayerIndex(layerName);
