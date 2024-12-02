@@ -64,6 +64,7 @@ public class PlayerScript : MonoBehaviour
     public float jumpForce;
     public float gravityForce;
 
+    private bool jumpHeld = false;
     public int maxAirJumps;
     private int remainingAirJumps;
 
@@ -115,11 +116,20 @@ public class PlayerScript : MonoBehaviour
     public float groundSlamExplodeForce;
     public float groundSlamExplodeUpForce;
 
+    private Vector3[] raycastDirections;
     //--------------------Implode--------------------//
     [Header("Implode")]
     public float groundSlamImplodeRadius;
     public float groundSlamImplodeForce;
 
+
+    //--------------------Wall Running--------------------//
+    public float wallAtractionForce;
+    public float jumpAwayForce;
+
+    public float raycastLenght;
+
+    private bool wallRunning;
     //--------------------References--------------------//
     [Header("References")]
     public TextMeshProUGUI speedText;
@@ -234,6 +244,11 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
+    void WallRunning()
+    {
+
+    }
+
     void CrouchingDownForce()
     {
         if (crouching && !grounded)
@@ -315,27 +330,43 @@ public class PlayerScript : MonoBehaviour
         // If this is the frame we jump
         if (context.phase == InputActionPhase.Performed)
         {
+            jumpHeld = true;
             // If we are grounded, jump like normal
             if (grounded)
             {
-                rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
-                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
+                Jump();
             }
             // If we jump while not grounded. Jump and remove one AirJump
             else if (remainingAirJumps >= 1)
             {
                 rig.velocity = new Vector3(rig.velocity.x, 0, rig.velocity.z);
-                rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
-                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
+                Jump();
                 remainingAirJumps -= 1;
             }
         }
+        if (context.phase == InputActionPhase.Canceled)
+            jumpHeld = false;
+    }
+
+    void Jump()
+    {
+        rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
+        camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
     }
 
     void OnCollisionEnter(Collision other)
     {
         CheckIfGrounded(other);
+        HoldingJumpButton();
         LandingAndGroundSlam(other);
+    }
+
+    void HoldingJumpButton()
+    {
+        if (jumpHeld && grounded)
+        {
+            Jump();
+        }
     }
 
     void LandingAndGroundSlam(Collision other)
@@ -385,37 +416,37 @@ public class PlayerScript : MonoBehaviour
                     allowGroundSlam = false;
                 }
                 if (groundSlamAction == GroundSlamAction.Explode)
-                    GroundSlamExplode();
+                    Algorithms.Explode(transform.position, groundSlamExplodeRadius, groundSlamExplodeForce, groundSlamUpForce);
                 else
-                    GroundSlamImplode();
+                    Algorithms.Implode(transform.position, groundSlamImplodeRadius, groundSlamImplodeForce);
             }
         }
         wasGrounded = grounded;
     }
 
-    void GroundSlamExplode()
-    {
-        Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamExplodeRadius);
-        foreach (var collider in colliders)
-        {
-            if (collider.gameObject.GetComponent<Rigidbody>() != null)
-            {
-                collider.gameObject.GetComponent<Rigidbody>().AddExplosionForce(groundSlamExplodeForce, transform.position, groundSlamExplodeRadius, groundSlamExplodeUpForce);
-            }
-        }
-    }
+    // void GroundSlamExplode()
+    // {
+    //     Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamExplodeRadius);
+    //     foreach (var collider in colliders)
+    //     {
+    //         if (collider.gameObject.GetComponent<Rigidbody>() != null)
+    //         {
+    //             collider.gameObject.GetComponent<Rigidbody>().AddExplosionForce(groundSlamExplodeForce, transform.position, groundSlamExplodeRadius, groundSlamExplodeUpForce);
+    //         }
+    //     }
+    // }
 
-    void GroundSlamImplode()
-    {
-        Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamImplodeRadius);
-        foreach (var collider in colliders)
-        {
-            if (collider.gameObject.GetComponent<Rigidbody>() != null)
-            {
-                collider.gameObject.GetComponent<Rigidbody>().AddForce((transform.position - collider.transform.position).normalized * groundSlamImplodeForce, ForceMode.Impulse);
-            }    
-        }
-    }
+    // void GroundSlamImplode()
+    // {
+    //     Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamImplodeRadius);
+    //     foreach (var collider in colliders)
+    //     {
+    //         if (collider.gameObject.GetComponent<Rigidbody>() != null)
+    //         {
+    //             collider.gameObject.GetComponent<Rigidbody>().AddForce((transform.position - collider.transform.position).normalized * groundSlamImplodeForce, ForceMode.Impulse);
+    //         }    
+    //     }
+    // }
 
     void CheckIfGrounded(Collision other)
     {

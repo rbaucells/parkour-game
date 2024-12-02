@@ -460,7 +460,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &4517907937467018208
 Transform:
   m_ObjectHideFlags: 0
@@ -493,6 +493,7 @@ MonoBehaviour:
   magSize: 30
   fireType: 0
   bulletType: 1
+  impactAction: 0
   damage: 1
   fireRateMin: 720
   fireAnimTime: 0.0833
@@ -501,6 +502,9 @@ MonoBehaviour:
   delayBetweenBursts: 0.5
   useBulletSpread: 1
   bulletVariance: {x: 0.05, y: 0.05}
+  actionRadius: 0
+  actionForce: 0
+  explosionUpForce: 0
   layerMask:
     serializedVersion: 2
     m_Bits: 55
@@ -513,7 +517,6 @@ MonoBehaviour:
   bulletParent: {fileID: 0}
   reloadAudio: {fileID: 8300000, guid: c3f608fc59cd04eee961897994049cf6, type: 3}
   fireAudio: {fileID: 8300000, guid: 7a9b34f64d090461595c2b3774e7cc58, type: 3}
-  emptyMagAudio: {fileID: 8300000, guid: 6e0789effa27c41dea44a6d0cd72c95f, type: 3}
   muzzleParticleSystem: {fileID: 198234346748616026, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
   impactParticleSystem: {fileID: 1874733766879046132, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}

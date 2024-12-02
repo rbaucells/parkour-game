@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 public static class Algorithms {
 
     public static IEnumerator CurveLerp(object instance, string nameOfVariable, float start, float end, AnimationCurve curve, float timeToComplete)
-{
+    {
         float elapsedTime = 0f;
         float current = 0.0f;
         Debug.Log("Entered Coroutine");
@@ -33,7 +34,7 @@ public static class Algorithms {
         field.SetValue(instance, current);
     }
     
-public static IEnumerator CurveLerpVector3(object instance, string nameOfVariable, AnimationCurve curve, float timeToComplete, Vector3 start, Vector3 end)
+    public static IEnumerator CurveLerpVector3(object instance, string nameOfVariable, AnimationCurve curve, float timeToComplete, Vector3 start, Vector3 end)
     {
         // Get the field or property dynamically
         var field = instance.GetType().GetField(nameOfVariable, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -76,5 +77,29 @@ public static IEnumerator CurveLerpVector3(object instance, string nameOfVariabl
             field.SetValue(instance, finalValue);
         else if (property != null)
             property.SetValue(instance, finalValue);
+    }
+
+    public static void Explode(Vector3 position, float radius, float force, float explosionUpForce)
+    {
+        Collider[] colliders = Physics.OverlapSphere(position, radius);
+        foreach (var collider in colliders)
+        {
+            if (collider.gameObject.GetComponent<Rigidbody>() != null)
+            {
+                collider.gameObject.GetComponent<Rigidbody>().AddExplosionForce(force, position, radius, explosionUpForce);
+            }
+        }
+    }
+
+    public static void Implode(Vector3 position, float radius, float force)
+    {
+        Collider[] colliders = Physics.OverlapSphere(position, radius);
+        foreach (var collider in colliders)
+        {
+            if (collider.gameObject.GetComponent<Rigidbody>() != null)
+            {
+                collider.gameObject.GetComponent<Rigidbody>().AddForce((position - collider.transform.position).normalized * force, ForceMode.Impulse);
+            }   
+        }
     }
 }

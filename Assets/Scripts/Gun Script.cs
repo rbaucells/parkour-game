@@ -30,6 +30,12 @@ public class GunScript : MonoBehaviour
         Medium,
         Big
     };
+
+    public enum ImpactAction{
+        None,
+        Explode,
+        Implode
+    };
     
     [Header("Magazine")]
     public float magSize;
@@ -38,6 +44,7 @@ public class GunScript : MonoBehaviour
     [Header("Shooting Type")]
     public FireType fireType;
     public BulletType bulletType;
+    public ImpactAction impactAction;
 
     [Header("Damage")]
     public float damage;
@@ -59,6 +66,10 @@ public class GunScript : MonoBehaviour
     public bool useBulletSpread;
     public Vector2 bulletVariance;
 
+    [Header("Impact Action")]
+    public float actionRadius;
+    public float actionForce;
+    public float explosionUpForce;
     [Header("Other")]
     public LayerMask layerMask;
     public Transform attackPoint;
@@ -81,7 +92,6 @@ public class GunScript : MonoBehaviour
         [Header("Audio")]
         public AudioClip reloadAudio;
         public AudioClip fireAudio;
-        public AudioClip emptyMagAudio;
 
         [Header("Particles")]
         public ParticleSystem muzzleParticleSystem;
@@ -137,8 +147,7 @@ public class GunScript : MonoBehaviour
             // Play Animation "Reload"
             anim.Play("Reload", 0, 0.0f);
             // Play Reload Audio 
-            audioSource.clip = reloadAudio;
-            audioSource.Play(0);
+            audioSource.PlayOneShot(reloadAudio);
         }
     }
 
@@ -156,11 +165,9 @@ public class GunScript : MonoBehaviour
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
         }
 
-        if (curMag == 0 && !audioSource.isPlaying)
+        if (curMag == 0)
         {
-            // If mag is empty, play empty sound
-            audioSource.clip = emptyMagAudio;
-            audioSource.Play(0);
+            Reload();
         }
     }
 
@@ -196,11 +203,9 @@ public class GunScript : MonoBehaviour
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
         }
 
-        if (curMag == 0 && !audioSource.isPlaying)
+        if (curMag == 0)
         {
-            // If mag is empty, play empty sound
-            audioSource.clip = emptyMagAudio;
-            audioSource.Play(0);
+            Reload();
         }
     }
 
@@ -211,8 +216,7 @@ public class GunScript : MonoBehaviour
         anim.Play("Fire", 0, 0.0f);
         playerScript.DoFireAnim(recoilInt);
         // Play the audio fireAudio
-        audioSource.clip = fireAudio;
-        audioSource.Play(0);
+        audioSource.PlayOneShot(fireAudio);
         // Particle for Muzzle Flash
         Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity, transform.GetChild(0));
         if (bulletType == BulletType.Raycast)
@@ -332,6 +336,21 @@ public class GunScript : MonoBehaviour
             bulletScript.gravity = bulletGravity;
             // Assign the Impact Particle System
             bulletScript.impactParticleSystem = impactParticleSystem;
+            bulletScript.actionForce = actionForce;
+            bulletScript.explosionUpForce = explosionUpForce;
+            bulletScript.actionRadius = actionRadius;
+            if (impactAction == ImpactAction.Explode)
+            {
+                bulletScript.action = 0;
+            }
+            else if (impactAction == ImpactAction.Implode)
+            {
+                bulletScript.action = 1;
+            }
+            else
+            {
+                bulletScript.action = 3;
+            }
     }
 
     bool ReadyToAnim()

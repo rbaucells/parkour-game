@@ -13,6 +13,14 @@ public class BulletScript : MonoBehaviour
     public Vector3 direction;
     [HideInInspector]
     public ParticleSystem impactParticleSystem;
+    [HideInInspector]
+    public float actionForce;
+    [HideInInspector]
+    public float actionRadius;
+    [HideInInspector]
+    public float explosionUpForce;
+    [HideInInspector]
+    public int action;
 
     void Start()
     {
@@ -24,6 +32,16 @@ public class BulletScript : MonoBehaviour
         Debug.Log("Collided at:" + other.GetContact(0).point);
         
         Instantiate(impactParticleSystem, other.GetContact(0).point, Quaternion.LookRotation(other.GetContact(0).normal));
+        
+        if (action == 0) // Aka explode
+        {
+            Algorithms.Explode(transform.position, actionRadius, actionForce, explosionUpForce);
+        }
+        else if (action == 1)
+        {
+            Algorithms.Implode(transform.position, actionRadius, actionForce);
+        }
+
         Destroy(gameObject);
     }
 
