@@ -124,12 +124,7 @@ public class PlayerScript : MonoBehaviour
 
 
     //--------------------Wall Running--------------------//
-    public float wallAtractionForce;
-    public float jumpAwayForce;
-
-    public float raycastLenght;
-
-    private bool wallRunning;
+    
     //--------------------References--------------------//
     [Header("References")]
     public TextMeshProUGUI speedText;

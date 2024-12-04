@@ -70,6 +70,10 @@ public class GunScript : MonoBehaviour
     public float actionRadius;
     public float actionForce;
     public float explosionUpForce;
+    [Header("Recoil")]
+    private Rigidbody playerRig;
+    public bool usePositionalRecoil;
+    public float positionalRecoilForce;
     [Header("Other")]
     public LayerMask layerMask;
     public Transform attackPoint;
@@ -120,6 +124,8 @@ public class GunScript : MonoBehaviour
         Debug.Log("Max Fire Rate: " + 60/fireAnimTime);
 
         playerScript = GetComponentInParent<PlayerScript>();
+
+        playerRig = playerScript.gameObject.GetComponent<Rigidbody>();
     }
 
     void SetRecoilSize()
@@ -288,6 +294,8 @@ public class GunScript : MonoBehaviour
             // Do the Visual bullet passing the direciton
             VisualBullet(direction);
         }
+        if (usePositionalRecoil)
+            playerRig.AddForce(-shootCenter.transform.forward * positionalRecoilForce, ForceMode.Impulse);
     }
 
     private IEnumerator RaycastSpawnTrail(TrailRenderer Trail, Vector3 HitPoint, Vector3 HitNormal, bool MadeImpact)
