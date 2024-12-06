@@ -69,22 +69,13 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Swing",
+                    "name": "Grapple",
                     "type": "Button",
                     "id": "48d6f2ad-324a-40ba-ad0a-86bbc9427677",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
-                },
-                {
-                    "name": "Swing Scroll Value",
-                    "type": "Value",
-                    "id": "92299867-2e85-4211-87c0-c05ff3f537eb",
-                    "expectedControlType": "Axis",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -282,18 +273,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Swing",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "551be55e-eb68-44ba-aced-b73e837c93a9",
-                    "path": "<Mouse>/scroll/y",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Swing Scroll Value",
+                    "action": "Grapple",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

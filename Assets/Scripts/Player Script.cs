@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using TMPro;
 using System.Linq;
 using UnityEditor.EditorTools;
+using System;
 
 public class PlayerScript : MonoBehaviour
 {
@@ -121,18 +122,40 @@ public class PlayerScript : MonoBehaviour
     [Header("Implode")]
     public float groundSlamImplodeRadius;
     public float groundSlamImplodeForce;
-
-
     //--------------------Wall Running--------------------//
-    
+    [Header("Wall Running")]
+    public float wallAttractionForce;
+    public float moveMultiplier;
+    public float gravityMultiplier;
+
+    public Vector2 wallAngleMaxMin;
+
+    private bool wallRunning;
+    [Header("Wall Jumping")]
+    public float maxWallAngleDiff = 5f; // Ex: 5, angle must be between 95 and 85
+
+    private bool wallGrounded = false;
+
+    private bool isWallOnRight;
+    private bool isWallOnLeft;
+    private bool isWallInFront;
+    private bool isWallInBack;
+
+    private const float wallTolerance = 0.1f; // Tolerance for horizontal proximity to wall
+    private const float wallHeightThreshold = 1.0f; // Height difference to check walls relative to player
+    //--------------------Grapple--------------------//
+    [Header("Grapple")]
+    public float maxGrappleDistance;
+    public float force;
+    private bool grappling;
     //--------------------References--------------------//
     [Header("References")]
     public TextMeshProUGUI speedText;
-
     private CapsuleCollider capsuleCollider;
     private Transform cameraContainer;
     private Animator camAnim;
     private Rigidbody rig;
+    public Transform shootCenter;
 
     //--------------------Weapons--------------------//
     [Header("Weapons")]
@@ -227,11 +250,19 @@ public class PlayerScript : MonoBehaviour
         UpdateCrouchingThings();
         WalkingAnimAndMoveForce();
         CrouchingDownForce();
+        WallRunning();
 
         // Speedometer Text
         speedText.text = "Current Speed: " + Mathf.RoundToInt(new Vector3(currentXSpeed, currentYSpeed, currentZSpeed).magnitude) + "m/s";
         // Apply Gravity Force
-        rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
+        if (wallRunning)
+        {
+            rig.AddForce(Vector3.down * gravityForce * gravityMultiplier, ForceMode.Acceleration);
+            // Reapply the movement adjustment to handle held keys
+            moveValue = AdjustInputForWallRun(moveValue);
+        }
+        else
+            rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
 
         if (grounded)
         {
@@ -239,14 +270,68 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
+    
     void WallRunning()
     {
+        // Check if wall to Right
+        if (isWallOnRight && !grounded)
+        {
+            if (!wallRunning) // If Not Already WallRunning
+            {
+                // Play anim, and Set Bools
+                camAnim.Play("Wall Run Right In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
+                Debug.Log("Wall Run Right In");
+                wallRunning = true;
+            }
+        }
+        else if (isWallOnLeft && !grounded)
+        {
+            if (!wallRunning) // If Not Already WallRunning
+            {
+                // Play anim, and Set Bools
+                camAnim.Play("Wall Run Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
+                Debug.Log("Wall Run Left In");
+                wallRunning = true;
+            }
+        }
+        else // We Are Not Near a Wall
+        {
+            if (wallRunning) // If we Were WallRunning
+            {
+                // Play Out Anims, Set Variables
+                if (isWallOnRight)
+                {
+                    camAnim.SetTrigger("wallRunRightOut");
+                    Debug.Log("Wall Run Right Out");
+                }
+                else if (isWallOnLeft)
+                {
+                    camAnim.SetTrigger("wallRunLeftOut");
+                    Debug.Log("Wall Run Left Out");
+                }
+                wallRunning = false;
 
+            }
+        }
+
+        if (wallRunning)
+        {
+            // If Currently WallRunning, Add Attraction Force
+            if (isWallOnLeft)
+            {
+                rig.AddForce(-transform.right * wallAttractionForce, ForceMode.Acceleration);
+            }
+            else if (isWallOnRight)
+            {
+                rig.AddForce(transform.right * wallAttractionForce, ForceMode.Acceleration);
+            }
+        }
+        wallGrounded = wallRunning;
     }
 
     void CrouchingDownForce()
     {
-        if (crouching && !grounded)
+        if (crouching && !grounded || crouching && !wallGrounded)
         {
             rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
         }
@@ -295,16 +380,37 @@ public class PlayerScript : MonoBehaviour
 
     public void OnMoveInput(InputAction.CallbackContext context)
     {
-        // If this is the frame movement key is pressed, Store the value
         if (context.phase == InputActionPhase.Performed)
         {
-            moveValue = context.ReadValue<Vector2>();
+            Vector2 inputValue = context.ReadValue<Vector2>();
+            moveValue = AdjustInputForWallRun(inputValue);
         }
-        // Else reset movement value.
         else if (context.phase == InputActionPhase.Canceled)
         {
             moveValue = Vector2.zero;
         }
+    }
+
+    private Vector2 AdjustInputForWallRun(Vector2 inputValue)
+    {
+        if (wallRunning)
+        {
+            Vector2 adjustedInput = inputValue;
+
+            if (isWallOnRight)
+            {
+                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, -1, 0), inputValue.y);
+            }
+            else if (isWallOnLeft)
+            {
+                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, 0, 1), inputValue.y);
+            }
+
+            // Normalize to avoid slowing down diagonally, but preserve raw forward input (y)
+            return new Vector2(adjustedInput.x, Mathf.Max(adjustedInput.y, inputValue.y)).normalized;
+        }
+
+        return inputValue;
     }
 
     void Move()
@@ -317,7 +423,10 @@ public class PlayerScript : MonoBehaviour
         // Multiply Move Acceleration
         move *= moveForce;
         // Add the force
-        rig.AddForce(move, ForceMode.Acceleration);
+        if (wallRunning)
+            rig.AddForce(move * moveMultiplier, ForceMode.Acceleration);
+        else
+            rig.AddForce(move, ForceMode.Acceleration);           
     }
 
     public void OnJumpInput(InputAction.CallbackContext context)
@@ -327,9 +436,19 @@ public class PlayerScript : MonoBehaviour
         {
             jumpHeld = true;
             // If we are grounded, jump like normal
-            if (grounded)
+            if (grounded || wallGrounded)
             {
                 Jump();
+            }
+            if (isWallInFront && !grounded && wallGrounded)
+            {
+                Debug.Log("Forward Jump");
+                rig.AddForce((transform.up + -transform.forward) * jumpForce, ForceMode.Impulse);
+            }
+            else if (isWallInBack && !grounded && wallGrounded)
+            {
+                Debug.Log("Back Jump");
+                rig.AddForce((transform.forward + transform.up) * jumpForce, ForceMode.Impulse);    
             }
             // If we jump while not grounded. Jump and remove one AirJump
             else if (remainingAirJumps >= 1)
@@ -345,20 +464,76 @@ public class PlayerScript : MonoBehaviour
 
     void Jump()
     {
-        rig.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
+        rig.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
     }
 
     void OnCollisionEnter(Collision other)
     {
         CheckIfGrounded(other);
+        DetectWall(other);
         HoldingJumpButton();
         LandingAndGroundSlam(other);
+    }
+    private void DetectWall(Collision other)
+    {
+        List<ContactPoint> contactPoints = new List<ContactPoint>(other.contactCount);
+        other.GetContacts(contactPoints);
+
+        foreach (ContactPoint contactPoint in contactPoints)
+        {
+            RaycastHit hit;
+
+            if (Physics.Raycast(transform.position, Vector3.down, out hit))
+            {
+                // Get the normal of the ground
+                Vector3 groundNormal = hit.normal;
+
+                // Calculate the angle between the collision normal and the ground normal using Vector3.Angle
+                float groundAngle = Vector3.Angle(contactPoint.normal, groundNormal);
+
+                // Check if the angle is between 85 and 95 degrees
+                if (groundAngle >= wallAngleMaxMin.x && groundAngle <= wallAngleMaxMin.y)
+                {
+                    foreach (ContactPoint contact in contactPoints)
+                    {
+                        Vector3 normal = contact.normal;
+
+                        // Player's forward and right vectors
+                        Vector3 playerForward = transform.forward;
+                        Vector3 playerRight = transform.right;
+
+                        // Dot product to detect collision side
+                        float dotForward = Vector3.Dot(normal, playerForward);
+                        float dotRight = Vector3.Dot(normal, playerRight);
+                        float dotBack = Vector3.Dot(normal, -playerForward);
+                        float dotLeft = Vector3.Dot(normal, -playerRight);
+
+                        if (dotForward > 0.5f)
+                        {
+                            Debug.Log("back");
+                        }
+                        else if (dotRight > 0.5f)
+                        {
+                            Debug.Log("left");
+                        }
+                        else if (dotBack > 0.5f)
+                        {
+                            Debug.Log("front");
+                        }
+                        else if (dotLeft > 0.5f)
+                        {
+                            Debug.Log("right");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void HoldingJumpButton()
     {
-        if (jumpHeld && grounded)
+        if (jumpHeld && grounded || jumpHeld && wallGrounded)
         {
             Jump();
         }
@@ -418,30 +593,6 @@ public class PlayerScript : MonoBehaviour
         }
         wasGrounded = grounded;
     }
-
-    // void GroundSlamExplode()
-    // {
-    //     Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamExplodeRadius);
-    //     foreach (var collider in colliders)
-    //     {
-    //         if (collider.gameObject.GetComponent<Rigidbody>() != null)
-    //         {
-    //             collider.gameObject.GetComponent<Rigidbody>().AddExplosionForce(groundSlamExplodeForce, transform.position, groundSlamExplodeRadius, groundSlamExplodeUpForce);
-    //         }
-    //     }
-    // }
-
-    // void GroundSlamImplode()
-    // {
-    //     Collider[] colliders = Physics.OverlapSphere(transform.position, groundSlamImplodeRadius);
-    //     foreach (var collider in colliders)
-    //     {
-    //         if (collider.gameObject.GetComponent<Rigidbody>() != null)
-    //         {
-    //             collider.gameObject.GetComponent<Rigidbody>().AddForce((transform.position - collider.transform.position).normalized * groundSlamImplodeForce, ForceMode.Impulse);
-    //         }    
-    //     }
-    // }
 
     void CheckIfGrounded(Collision other)
     {
@@ -561,6 +712,14 @@ public class PlayerScript : MonoBehaviour
             case 3:
                 camAnim.Play("Big Fire", camAnim.GetLayerIndex("Big Fire"), 0.0f);
                 break;
+        }
+    }
+
+    public void OnGrappleInput(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed)
+        {
+
         }
     }
 
