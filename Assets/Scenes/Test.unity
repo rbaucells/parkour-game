@@ -7692,13 +7692,10 @@ MonoBehaviour:
   groundSlamImplodeRadius: 6
   groundSlamImplodeForce: 20
   wallAttractionForce: 50
-  raycastLengh: 0.6
-  layerMask:
-    serializedVersion: 2
-    m_Bits: 311
-  gravityMultiplier: 0.25
   moveMultiplier: 2
-  delay: 0.1
+  gravityMultiplier: 0.25
+  wallAngleMaxMin: {x: 90, y: 90}
+  maxWallAngleDiff: 5
   maxGrappleDistance: 150
   force: 100
   speedText: {fileID: 645401587}
