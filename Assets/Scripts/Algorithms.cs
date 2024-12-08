@@ -9,7 +9,6 @@ public static class Algorithms {
     {
         float elapsedTime = 0f;
         float current = 0.0f;
-        Debug.Log("Entered Coroutine");
 
         var field = instance.GetType().GetField(nameOfVariable);
 
@@ -24,7 +23,6 @@ public static class Algorithms {
             elapsedTime += Time.deltaTime;
 
             field.SetValue(instance, current);
-            Debug.Log("Current In Coroutine Is: " + current + " At: " + Time.time);
             // Wait for the next frame
             yield return null;
         }

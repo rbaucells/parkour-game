@@ -7217,6 +7217,22 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 48d6f2ad-324a-40ba-ad0a-86bbc9427677
     m_ActionName: 'Main/Swing[/Mouse/middleButton]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8814216806854569518}
+        m_TargetAssemblyTypeName: PlayerScript, Assembly-CSharp
+        m_MethodName: OnDashInput
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 2928f81e-10c8-4df2-b18b-3f720214ecd1
+    m_ActionName: 'Main/Dash[/Keyboard/ctrl]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Main
@@ -7695,7 +7711,10 @@ MonoBehaviour:
   moveMultiplier: 2
   gravityMultiplier: 0.25
   wallAngleMinMax: {x: 90, y: 90}
-  maxWallAngleDiff: 5
+  dashForce: 125
+  dashDelay: 3
+  dashTime: 0.35
+  leaveVelocityMultiplier: 1.25
   maxGrappleDistance: 150
   force: 100
   speedText: {fileID: 645401587}

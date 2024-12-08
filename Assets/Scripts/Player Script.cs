@@ -100,6 +100,7 @@ public class PlayerScript : MonoBehaviour
     public float crouchDownForce;
     public float maxCrouchDownForce;
 
+    public float crouchXMultiplier;
     //--------------------Ground Slam--------------------//
     [Header("Ground Slam")]
     public GroundSlamAction groundSlamAction;
@@ -130,8 +131,6 @@ public class PlayerScript : MonoBehaviour
 
     public Vector2 wallAngleMinMax;
 
-    [Header("Wall Jumping")]
-
     private bool wallGrounded = false;
     private bool wasWallGrounded;
 
@@ -145,6 +144,14 @@ public class PlayerScript : MonoBehaviour
 
     
     private ISet<Collider> wallColliders = new HashSet<Collider>();
+    //--------------------Dash--------------------//
+    [Header("Dash")]
+    public float dashForce;
+    public float dashDelay;
+    public float dashTime;
+    public float leaveVelocityMultiplier;
+
+    private float lastDashTime;
     //--------------------Grapple--------------------//
     [Header("Grapple")]
     public float maxGrappleDistance;
@@ -373,8 +380,13 @@ public class PlayerScript : MonoBehaviour
         // Add the force
         if (wallGrounded)
             rig.AddForce(move * moveMultiplier, ForceMode.Acceleration);
+        else if (crouching)
+        {
+            Debug.Log(new Vector3(move.x * crouchXMultiplier, 0, move.z));
+            rig.AddForce(new Vector3(move.x * crouchXMultiplier, 0, move.z), ForceMode.Acceleration);   
+        } 
         else
-            rig.AddForce(move, ForceMode.Acceleration);           
+            rig.AddForce(move, ForceMode.Acceleration); 
     }
 
     public void OnJumpInput(InputAction.CallbackContext context)
@@ -727,6 +739,24 @@ public class PlayerScript : MonoBehaviour
         {
 
         }
+    }
+
+    public void OnDashInput(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed && lastDashTime + dashDelay <= Time.time)
+        {
+            lastDashTime = Time.time;
+            StartCoroutine(OnDashInput());
+        }
+    }
+
+    IEnumerator OnDashInput()
+    {
+        Vector3 startVelocity = new Vector3(currentXSpeed, 0, currentZSpeed);
+        rig.AddForce(cameraContainer.forward * dashForce, ForceMode.Impulse);
+        camAnim.Play("Dash", camAnim.GetLayerIndex("Dash Layer"), 0.0f);
+        yield return new WaitForSeconds(dashTime);
+        rig.velocity = startVelocity * leaveVelocityMultiplier;
     }
 
     bool CamAnimReadyToAnim(string layerName)
