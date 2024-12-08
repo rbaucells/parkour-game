@@ -7694,7 +7694,7 @@ MonoBehaviour:
   wallAttractionForce: 50
   moveMultiplier: 2
   gravityMultiplier: 0.25
-  wallAngleMaxMin: {x: 90, y: 90}
+  wallAngleMinMax: {x: 90, y: 90}
   maxWallAngleDiff: 5
   maxGrappleDistance: 150
   force: 100
