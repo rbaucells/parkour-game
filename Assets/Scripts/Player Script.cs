@@ -157,6 +157,15 @@ public class PlayerScript : MonoBehaviour
     public float maxGrappleDistance;
     public float force;
     private bool grappling;
+
+    private Vector3 grapplePoint;
+    
+    public float grappleSpring = 4.5f;
+    public float grappleDamper = 7f;
+    public float grappleMassScale = 4.5f;
+
+    public float grappleMinDistanceMultiplier = 0.25f;
+    public float grappleMaxDistanceMultiplier = 0.8f;
     //--------------------References--------------------//
     [Header("References")]
     public TextMeshProUGUI speedText;
@@ -165,6 +174,7 @@ public class PlayerScript : MonoBehaviour
     private Animator camAnim;
     private Rigidbody rig;
     public Transform shootCenter;
+    private LineRenderer lineRenderer;
 
     //--------------------Weapons--------------------//
     [Header("Weapons")]
@@ -176,13 +186,22 @@ public class PlayerScript : MonoBehaviour
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;
 
-    void Awake()
+    #region Start
+
+    void Awake() // Called Before First Frame
     {
         InitializeComponents();
         SetDefaults();
     }
+    
+    void Start() // Called On First Frame
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        // Every 3 Seconds, Check for input change
+        InvokeRepeating(nameof(CheckIfInputChange), 0.0f, 3f);
+    }
 
-    void InitializeComponents()
+    void InitializeComponents() // Called In Awake(). To Define References
     {
         playerInput = GetComponent<PlayerInput>();
         rig = GetComponent<Rigidbody>();
@@ -191,11 +210,12 @@ public class PlayerScript : MonoBehaviour
         gunScripts = GameObject.FindGameObjectsWithTag("Gun");
         cameraContainer = GameObject.Find("Camera Container").transform;
         camAnim = cameraContainer.GetComponent<Animator>();
+        lineRenderer = cameraContainer.GetComponent<LineRenderer>();
 
         fire = playerInput.actions["Shoot"];
     }
 
-    void SetDefaults()
+    void SetDefaults() // Called In Awake(). To Define Default Values
     {
         defaultCamHeight = cameraContainer.transform.localPosition.y;
         defaultColHeight = capsuleCollider.height;
@@ -210,14 +230,7 @@ public class PlayerScript : MonoBehaviour
         defaultGroundSlamUpForce = groundSlamUpForce;
     }
 
-    void Start()
-    {
-        Cursor.lockState = CursorLockMode.Locked;
-        // Every 3 Seconds, Check for input change
-        InvokeRepeating(nameof(CheckIfInputChange), 0.0f, 3f);
-    }
-
-    void CheckIfInputChange()
+    void CheckIfInputChange() // First Called In Start(). Called Every 3 Seconds. To Check Which Input Is Being Used
     {
         if (Gamepad.all.Count > 0)
             lookSenseToUse = controllerLookSens;
@@ -225,49 +238,32 @@ public class PlayerScript : MonoBehaviour
             lookSenseToUse = mouseLookSens;
     }
 
-    void ResetAirJumps()
-    {
-        // If grounded, reset air jumps
-        if (grounded || wallGrounded)
-        {
-            remainingAirJumps = maxAirJumps;
-        }
-    }
+    #endregion
 
-    void LateUpdate()
-    {
-        Camera();
-    }
+    #region Update
 
-    void AutoFire()
+    void FixedUpdate() // Called at Fixed Interval. Frame-Rate Independant
     {
-        // If we are holding down button
-        if (fire.IsPressed())
-        {
-            foreach (GameObject currentGunObject in gunScripts)
-            {
-                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
-                gunScript.FullAutoFire();
-            }
-        }
-    }
-    void FixedUpdate()
-    {
-        AutoFire();
-
+        ApplyGravity();
         Move();
-
         ResetAirJumps();
-
-        UpdateCrouchingThings();
-
         WalkingAnimAndMoveForce();
 
-        CrouchingDownForce();
-
+        GroundedDisableSlam();
+        UpdateCrouchingThings();
+        AutoFire();
         // Speedometer Text
         speedText.text = "Current Speed: " + Mathf.RoundToInt(new Vector3(currentXSpeed, currentYSpeed, currentZSpeed).magnitude) + "m/s";
-        // Apply Gravity Force
+    }
+
+    void LateUpdate() // Called After All Other Update Functions
+    {
+        Camera();
+        DrawLine();
+    }
+
+    void ApplyGravity() // Called in Fixed Update(). Applies Gravity to Player.
+    {
         if (wallGrounded)
         {
             rig.AddForce(Vector3.down * gravityForce * gravityMultiplier, ForceMode.Acceleration);
@@ -276,24 +272,43 @@ public class PlayerScript : MonoBehaviour
         }
         else
             rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
-
-        if (grounded)
-        {
-            allowGroundSlam = false;
-        }
-    }
-
-    void CrouchingDownForce()
-    {
         if (crouching && !grounded || crouching && !wallGrounded)
         {
             rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
         }
     }
 
-    void WalkingAnimAndMoveForce()
+    void Move() // Called In Fixed Update(). Adds Movement Forces
     {
-        Vector3 horizontalVelocity = new Vector3(rig.velocity.x, 0, rig.velocity.z);
+        currentYSpeed = rig.velocity.y;
+        currentXSpeed = rig.velocity.x;
+        currentZSpeed = rig.velocity.z;
+        // Define player movement
+        Vector3 move = transform.forward * moveValue.y + transform.right * moveValue.x;
+        // Multiply Move Acceleration
+        move *= moveForce;
+        // Add the force
+        if (wallGrounded)
+            rig.AddForce(move * moveMultiplier, ForceMode.Acceleration);
+        else if (crouching)
+        {
+            rig.AddForce(new Vector3(move.x * crouchXMultiplier, 0, move.z), ForceMode.Acceleration);   
+        } 
+        else
+            rig.AddForce(move, ForceMode.Acceleration); 
+    }
+
+    void ResetAirJumps() // Called In Fixed Update(). To Reset AirJumps when Grounded
+    {
+        if (grounded || wallGrounded)
+        {
+            remainingAirJumps = maxAirJumps;
+        }
+    }
+
+    void WalkingAnimAndMoveForce() // Called In Fixed Update(). Plays Walking Anim And Increases Move Force Over Time.
+    {
+        Vector3 horizontalVelocity = new(rig.velocity.x, 0, rig.velocity.z);
 
         bool isMoving = horizontalVelocity.magnitude > movementThreshold;
 
@@ -309,20 +324,34 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-    void UpdateCrouchingThings()
+    void GroundedDisableSlam() // Called In Fixed Update(). Disables Ground Slam While Grounded
+    {
+        if (grounded || wallGrounded)
+        {
+            allowGroundSlam = false;
+        }   
+    }
+
+    void UpdateCrouchingThings() // Called In Fixed Update(). Sets Values Used In Crouching Coroutines
     {
         cameraContainer.transform.localPosition = new Vector3(0, curCamHeight, 0);
         capsuleCollider.height = curColHeight;
         capsuleCollider.center = Vector3.up * curColCenter;
     }
 
-    public void OnLookInput(InputAction.CallbackContext context)
+    void AutoFire() // Called In Fixed Update(). To Call Gun's Auto-Fire Function while Fire Button Is Held
     {
-        // Store look value
-        deltaMouseValue = context.ReadValue<Vector2>();
+        if (fire.IsPressed())
+        {
+            foreach (GameObject currentGunObject in gunScripts)
+            {
+                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
+                gunScript.FullAutoFire();
+            }
+        }
     }
-
-    void Camera()
+    
+    void Camera() // Called In Late Update(). Rotates Camera and Player as Needed
     {
         // Rotate the Camera
         curCameraX += deltaMouseValue.y * lookSenseToUse;
@@ -331,6 +360,26 @@ public class PlayerScript : MonoBehaviour
         cameraContainer.localEulerAngles = new Vector3(-curCameraX, 0, 0);
 
         transform.eulerAngles += new Vector3(0, deltaMouseValue.x * lookSenseToUse, 0);
+    }
+
+    void DrawLine()
+    {
+        if (grappling)
+        {
+            lineRenderer.positionCount = 2;
+            lineRenderer.SetPosition(0, cameraContainer.position);
+            lineRenderer.SetPosition(1, grapplePoint);
+        }
+    }
+
+    #endregion
+
+    #region Input
+
+    public void OnLookInput(InputAction.CallbackContext context)
+    {
+        // Stores Delta Look Value
+        deltaMouseValue = context.ReadValue<Vector2>();
     }
 
     public void OnMoveInput(InputAction.CallbackContext context)
@@ -346,169 +395,168 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-    private Vector2 AdjustInputForWallRun(Vector2 inputValue)
-    {
-        if (wallGrounded)
-        {
-            Vector2 adjustedInput = inputValue;
-
-            if (isWallOnRight)
-            {
-                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, -1, 0), inputValue.y);
-            }
-            else if (isWallOnLeft)
-            {
-                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, 0, 1), inputValue.y);
-            }
-
-            // Normalize to avoid slowing down diagonally, but preserve raw forward input (y)
-            return new Vector2(adjustedInput.x, Mathf.Max(adjustedInput.y, inputValue.y)).normalized;
-        }
-
-        return inputValue;
-    }
-
-    void Move()
-    {
-        currentYSpeed = rig.velocity.y;
-        currentXSpeed = rig.velocity.x;
-        currentZSpeed = rig.velocity.z;
-        // Define player movement
-        Vector3 move = transform.forward * moveValue.y + transform.right * moveValue.x;
-        // Multiply Move Acceleration
-        move *= moveForce;
-        // Add the force
-        if (wallGrounded)
-            rig.AddForce(move * moveMultiplier, ForceMode.Acceleration);
-        else if (crouching)
-        {
-            Debug.Log(new Vector3(move.x * crouchXMultiplier, 0, move.z));
-            rig.AddForce(new Vector3(move.x * crouchXMultiplier, 0, move.z), ForceMode.Acceleration);   
-        } 
-        else
-            rig.AddForce(move, ForceMode.Acceleration); 
-    }
-
     public void OnJumpInput(InputAction.CallbackContext context)
     {
         // If this is the frame we jump
         if (context.phase == InputActionPhase.Performed)
         {
             jumpHeld = true;
-            // If we are grounded, jump like normal
-            if (grounded || (wallGrounded && !(isWallInFront || isWallInBack || isWallOnRight || isWallOnLeft)))
-            {
-                Jump();
-            }
-            else if (isWallInFront && wallGrounded)
-            {
-                rig.AddForce((Vector3.up + -transform.forward) * jumpForce, ForceMode.Impulse);
-                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
-            }
-            else if (isWallInBack && wallGrounded)
-            {
-                rig.AddForce((Vector3.up + transform.forward) * jumpForce, ForceMode.Impulse);
-                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);     
-            }
-            else if (isWallOnRight)
-            {
-                rig.AddForce((Vector3.up + -transform.right) * jumpForce, ForceMode.Impulse);
-                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);      
-            }
-            else if (isWallOnLeft)
-            {
-                rig.AddForce((Vector3.up + transform.right) * jumpForce, ForceMode.Impulse);
-                camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);                   
-            }
-            // If we jump while not grounded. Jump and remove one AirJump
-            else if (remainingAirJumps >= 1)
-            {
-                rig.velocity = new Vector3(rig.velocity.x, 0, rig.velocity.z);
-                Jump();
-                remainingAirJumps -= 1;
-            }
+            Jump();
         }
         if (context.phase == InputActionPhase.Canceled)
             jumpHeld = false;
     }
 
-    void Jump()
+    public void OnCrouchInput(InputAction.CallbackContext context)
     {
-        rig.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-        camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
+        // If we crouch on this frame, crouching true. 
+        if (context.phase == InputActionPhase.Performed)
+        {
+            if (!grounded) 
+                allowGroundSlam = true;
+
+            if (crouchType == CrouchType.Hold)
+            {
+                Crouch();
+            }
+            else
+            {
+                if (!crouching)
+                {
+                    Crouch();
+                }
+                else
+                {
+                    UnCrouch();
+                }
+            }
+        }
+        if (context.phase == InputActionPhase.Canceled && crouchType == CrouchType.Hold)
+        {
+            UnCrouch();
+        }
     }
+
+    
+    public void OnReloadInput(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed)
+        {
+            foreach (GameObject currentGunObject in gunScripts)
+            {
+                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
+                gunScript.Reload();
+            }
+        }
+    }
+
+    public void OnFireInput(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed)
+        {
+            foreach (GameObject currentGunObject in gunScripts)
+            {
+                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
+                gunScript.SemiAutoFire();
+            }
+        }
+    }
+
+    public void OnExitInput(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed)
+            Application.Quit();
+    }
+
+    public void OnGrappleInput(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed)
+        {
+            SpringJoint springJoint = gameObject.AddComponent<SpringJoint>();
+            RaycastHit hit;
+            if (Physics.Raycast(cameraContainer.transform.position, cameraContainer.transform.forward, out hit, maxGrappleDistance))
+            {
+                grappling = true;
+
+                springJoint.autoConfigureConnectedAnchor = false;
+
+                grapplePoint = hit.point;
+                springJoint.anchor = grapplePoint;
+
+                springJoint.enableCollision = true;
+
+                float distance = Vector3.Distance(transform.position, grapplePoint);
+
+                springJoint.minDistance = distance * grappleMinDistanceMultiplier;
+                springJoint.maxDistance = distance * grappleMaxDistanceMultiplier;
+
+                springJoint.spring = grappleSpring;
+                springJoint.damper = grappleDamper;
+                springJoint.massScale = grappleMassScale;
+            }
+        }
+        else if (context.phase == InputActionPhase.Canceled)
+        {
+            grappling = false;
+            grapplePoint = Vector3.zero;
+            Destroy(gameObject.GetComponent<SpringJoint>());
+        }
+    }
+
+    public void OnDashInput(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Performed && lastDashTime + dashDelay <= Time.time)
+        {
+            lastDashTime = Time.time;
+            StartCoroutine(Dash());
+        }
+    }
+
+    #endregion
+    
+    #region Jumping/Collision
 
     void OnCollisionEnter(Collision other)
     {
+        // Ground Checks
         CheckIfGrounded(other);
         CheckIfWallGrounded(other);
 
         HoldingJumpButton();
 
+        // Effects
         LandingAndGroundSlam(other);
         WallRunningAnims();
     }
 
-    void WallRunningAnims()
+    void CheckIfGrounded(Collision other) // Called In OnCollisionEnter(). Checks If Any Collision Points at FeetYLevel
     {
-        // If Wallgrounded now but not last frame and not already Wallrunning
-        if (wallGrounded && !wasWallGrounded && !grounded)
+        var contactPoints = new ContactPoint[other.contactCount];
+        other.GetContacts(contactPoints);
+        var feetYLevel = (transform.position.y + curColCenter) - curColHeight / 2;
+        for (int i = 0; i < contactPoints.Length; i++)
         {
-            if (isWallOnRight)
+            if (Mathf.Abs(contactPoints[i].point.y - feetYLevel) < feetTolerance)
             {
-                Debug.Log("Wall Run Right In");
-                camAnim.Play("Wall Run Right In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
+                groundColiders.Add(other.collider);
+                break;
             }
-            else if (isWallOnLeft)
-            {
-                Debug.Log("Wall Run Left In");
-                camAnim.Play("Wall Run Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
-            }
-
-            wasWallGrounded = wallGrounded;
         }
-        // If was Wallgrounded but not anymore
-        else if (!wallGrounded)
-        {   
-            if (isWallOnRight)
-            {
-                Debug.Log("Wall Run Right Out");
-                camAnim.SetTrigger("wallRunRightOut");
-                isWallOnRight = false;
-            }
-            else if (isWallOnLeft)
-            {
-                Debug.Log("Wall Run Left Out");
-                camAnim.SetTrigger("wallRunLeftOut");
-                isWallOnLeft = false;
-            }
-            else if (isWallInFront)
-            {
-                isWallInFront = false;
-            }
-            else if (isWallInBack)
-            {
-                isWallInBack = false;
-            }
-            wasWallGrounded = wallGrounded;
-        }
+        grounded = groundColiders.Any();
     }
-    void CheckIfWallGrounded(Collision other)
+
+    void CheckIfWallGrounded(Collision other) // Called In OnCollisionEnter(). Checks If Wall Angle is Good. Then Checks Which Side Collision Occured
     {
         var contactPoints = new ContactPoint[other.contactCount];
         other.GetContacts(contactPoints);
 
         foreach (ContactPoint contactPoint in contactPoints)
         {
-            // Calculate the angle between the collision normal and the ground
             float groundAngle = Vector3.Angle(contactPoint.normal, Vector3.up);
-
-            // Check if the angle is between 85 and 95 degrees
             if (groundAngle >= wallAngleMinMax.x && groundAngle <= wallAngleMinMax.y)
             {
                 Vector3 normal = contactPoint.normal;
 
-                // Dot product to detect collision side
                 float dotForward = Vector3.Dot(normal, transform.forward);
                 float dotRight = Vector3.Dot(normal, transform.right);
                 float dotBack = Vector3.Dot(normal, -transform.forward);
@@ -543,15 +591,15 @@ public class PlayerScript : MonoBehaviour
         wallGrounded = wallColliders.Any();
     }
 
-    void HoldingJumpButton()
+    void HoldingJumpButton() // Called In OnCollisionEnter(). Jumps if Button Is Held
     {
-        if (jumpHeld && grounded || jumpHeld && wallGrounded)
+        if (jumpHeld && grounded)
         {
             Jump();
         }
     }
-
-    void LandingAndGroundSlam(Collision other)
+        
+    void LandingAndGroundSlam(Collision other) // Called In OnCollisionEnter(). If Not Grounded Before, But Grounded Now. Play Animations and GroundSlam
     {
         if (grounded && !wasGrounded) // Grounded now but not last frame
         {
@@ -606,24 +654,85 @@ public class PlayerScript : MonoBehaviour
         wasGrounded = grounded;
     }
 
-    void CheckIfGrounded(Collision other)
+    void WallRunningAnims() // Called In OnCollisionEnter() and OnCollisionExit(). If Not WallGrounded Before, But WallGrounded now. Play Anim. Vice Versa
     {
-        // Define Array
-        var contactPoints = new ContactPoint[other.contactCount];
-        other.GetContacts(contactPoints);
-        // Transform.pos.y for World Space. curColCenter as col offset. Half of height is distance from center to feet
-        var feetYLevel = (transform.position.y + curColCenter) - curColHeight / 2;
-        // Check if any contact point is close to feetYLevel
-        for (int i = 0; i < contactPoints.Length; i++)
+        if (wallGrounded && !wasWallGrounded && !grounded)
         {
-            if (Mathf.Abs(contactPoints[i].point.y - feetYLevel) < feetTolerance)
+            if (isWallOnRight)
             {
-                groundColiders.Add(other.collider);
-                break;
+                Debug.Log("Wall Run Right In");
+                camAnim.Play("Wall Run Right In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
             }
+            else if (isWallOnLeft)
+            {
+                Debug.Log("Wall Run Left In");
+                camAnim.Play("Wall Run Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
+            }
+
+            wasWallGrounded = wallGrounded;
         }
-        grounded = groundColiders.Any();
+        else if (!wallGrounded)
+        {   
+            if (isWallOnRight)
+            {
+                Debug.Log("Wall Run Right Out");
+                camAnim.SetTrigger("wallRunRightOut");
+                isWallOnRight = false;
+            }
+            else if (isWallOnLeft)
+            {
+                Debug.Log("Wall Run Left Out");
+                camAnim.SetTrigger("wallRunLeftOut");
+                isWallOnLeft = false;
+            }
+            else if (isWallInFront)
+            {
+                isWallInFront = false;
+            }
+            else if (isWallInBack)
+            {
+                isWallInBack = false;
+            }
+            wasWallGrounded = wallGrounded;
+        }
     }
+
+    void Jump() // Called in OnJumpInput() On First Frame. Determines Direction to Jump In
+    {
+        if (grounded || (wallGrounded && !(isWallInFront || isWallInBack || isWallOnRight || isWallOnLeft)))
+        {
+            AddJumpForce(Vector3.up);
+        }
+        else if (isWallInFront && wallGrounded)
+        {
+            AddJumpForce(Vector3.up + -transform.forward);
+        }
+        else if (isWallInBack && wallGrounded)
+        {
+            AddJumpForce(Vector3.up + transform.forward); 
+        }
+        else if (isWallOnRight)
+        {
+            AddJumpForce(Vector3.up + -transform.right);
+        }
+        else if (isWallOnLeft)
+        {
+            AddJumpForce(Vector3.up + transform.right);         
+        }
+        else if (remainingAirJumps >= 1)
+        {
+            rig.velocity = new Vector3(rig.velocity.x, 0, rig.velocity.z);
+            AddJumpForce(Vector3.up);
+            remainingAirJumps -= 1;
+        }
+    }
+
+    void AddJumpForce(Vector3 direction) // Called In Jump(). Adds A Force In direction
+    {
+        rig.AddForce(direction * jumpForce, ForceMode.Impulse);
+        camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
+    }
+
 
     void OnCollisionExit(Collision other)
     {
@@ -631,6 +740,7 @@ public class PlayerScript : MonoBehaviour
         groundColiders.Remove(other.collider);
         grounded = groundColiders.Any();
         wasGrounded = grounded;
+
         // Check if Still WallGrounded
         wallColliders.Remove(other.collider);
         wallGrounded = wallColliders.Any();
@@ -638,37 +748,20 @@ public class PlayerScript : MonoBehaviour
         WallRunningAnims();
     }
 
-    public void OnCrouchInput(InputAction.CallbackContext context)
-    {
-        // If we crouch on this frame, crouching true. 
-        if (context.phase == InputActionPhase.Performed)
-        {
-            if (!grounded) 
-                allowGroundSlam = true;
+    #endregion
 
-            if (crouchType == CrouchType.Hold)
-            {
-                Crouch();
-            }
-            else
-            {
-                if (!crouching)
-                {
-                    Crouch();
-                }
-                else
-                {
-                    UnCrouch();
-                }
-            }
-        }
-        if (context.phase == InputActionPhase.Canceled && crouchType == CrouchType.Hold)
-        {
-            UnCrouch();
-        }
+    #region OtherFunctions
+
+    private IEnumerator Dash() // Called In OnDashInput(). Adds Force, Waits dashTime. Then Resets player velocity to starting velocity * leaveVelocityMultiplier
+    {
+        Vector3 startVelocity = new Vector3(currentXSpeed, 0, currentZSpeed);
+        rig.AddForce(cameraContainer.forward * dashForce, ForceMode.Impulse);
+        camAnim.Play("Dash", camAnim.GetLayerIndex("Dash Layer"), 0.0f);
+        yield return new WaitForSeconds(dashTime);
+        rig.velocity = startVelocity * leaveVelocityMultiplier;
     }
 
-    void Crouch()
+    private void Crouch() // Called In OnCrouchInput(). Starts A Bunch Of Coroutines to Move the Player
     {
         StopAllCoroutines();
         StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, crouchTargetCamHeight, crouchCurve, crouchTransitionTime));
@@ -677,7 +770,7 @@ public class PlayerScript : MonoBehaviour
         crouching = true;
     }
 
-    void UnCrouch()
+    private void UnCrouch() // Called In OnCrouchInput(). Starts A Bunch Of Coroutines to Move the Player
     {
         StopAllCoroutines();
         StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime));
@@ -686,37 +779,7 @@ public class PlayerScript : MonoBehaviour
         crouching = false;
     }
 
-    public void OnReloadInput(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Performed)
-        {
-            foreach (GameObject currentGunObject in gunScripts)
-            {
-                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
-                gunScript.Reload();
-            }
-        }
-    }
-
-    public void OnFireInput(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Performed)
-        {
-            foreach (GameObject currentGunObject in gunScripts)
-            {
-                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
-                gunScript.SemiAutoFire();
-            }
-        }
-    }
-
-    public void OnExitInput(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Performed)
-            Application.Quit();
-    }
-
-    public void DoFireAnim(int size)
+    public void DoFireAnim(int size) // Called In GunScript.Shoot(). Plays Screen Shake Animation
     {
         // Play corresponding firing animation
         switch (size)
@@ -733,36 +796,37 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-    public void OnGrappleInput(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Performed)
-        {
+    #endregion
 
-        }
-    }
+    #region Utilities
 
-    public void OnDashInput(InputAction.CallbackContext context)
+    private bool CamAnimReadyToAnim(string layerName) // Returns True If No Animations Running on Layer
     {
-        if (context.phase == InputActionPhase.Performed && lastDashTime + dashDelay <= Time.time)
-        {
-            lastDashTime = Time.time;
-            StartCoroutine(OnDashInput());
-        }
-    }
-
-    IEnumerator OnDashInput()
-    {
-        Vector3 startVelocity = new Vector3(currentXSpeed, 0, currentZSpeed);
-        rig.AddForce(cameraContainer.forward * dashForce, ForceMode.Impulse);
-        camAnim.Play("Dash", camAnim.GetLayerIndex("Dash Layer"), 0.0f);
-        yield return new WaitForSeconds(dashTime);
-        rig.velocity = startVelocity * leaveVelocityMultiplier;
-    }
-
-    bool CamAnimReadyToAnim(string layerName)
-    {
-        // Return true if no other anim playing on layer
         int layerIndex = camAnim.GetLayerIndex(layerName);
         return camAnim.GetCurrentAnimatorStateInfo(layerIndex).normalizedTime > 1 && !camAnim.IsInTransition(layerIndex);
     }
+
+    private Vector2 AdjustInputForWallRun(Vector2 inputValue) // Disables Movement in Direction of Wall While WallRunning.
+    {
+        if (wallGrounded)
+        {
+            Vector2 adjustedInput = inputValue;
+
+            if (isWallOnRight)
+            {
+                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, -1, 0), inputValue.y);
+            }
+            else if (isWallOnLeft)
+            {
+                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, 0, 1), inputValue.y);
+            }
+
+            // Normalize to avoid slowing down diagonally, but preserve raw forward input (y)
+            return new Vector2(adjustedInput.x, Mathf.Max(adjustedInput.y, inputValue.y)).normalized;
+        }
+
+        return inputValue;
+    }
+
+    #endregion
 }

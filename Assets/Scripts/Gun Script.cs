@@ -66,14 +66,21 @@ public class GunScript : MonoBehaviour
     public bool useBulletSpread;
     public Vector2 bulletVariance;
 
+    [Header("Multiple Bullets")]
+    public bool useMultipleBullets;
+    public int numberOfBullets;
+    public float radius;
+
     [Header("Impact Action")]
     public float actionRadius;
     public float actionForce;
     public float explosionUpForce;
+
     [Header("Recoil")]
     private Rigidbody playerRig;
     public bool usePositionalRecoil;
     public float positionalRecoilForce;
+
     [Header("Other")]
     public LayerMask layerMask;
     public Transform attackPoint;
@@ -225,74 +232,77 @@ public class GunScript : MonoBehaviour
         audioSource.PlayOneShot(fireAudio);
         // Particle for Muzzle Flash
         Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity, transform.GetChild(0));
-        if (bulletType == BulletType.Raycast)
+        for (int i = 0; i < numberOfBullets; i++)
         {
-            curMag -= 1;
-
-            Vector3 targetPoint = Vector3.zero;
-
-            Ray preRay = new(shootCenter.transform.position, shootCenter.transform.TransformDirection(Vector3.forward));
-
-            if (Physics.Raycast(preRay, out RaycastHit preHit, Mathf.Infinity, layerMask))
+            if (bulletType == BulletType.Raycast)
             {
-                // If it hits, our target position is at hit.point
-                targetPoint = preHit.point;
-            }
-            else
-            {
-                Debug.Log("Miss");
-                // // Else, chose a random distance.
-                targetPoint = preRay.GetPoint(75);
-            }
+                curMag -= 1;
 
-            Vector3 rayDirection = GetDirection(attackPoint.position, targetPoint);
-            // Define the ray
-            Ray ray = new(attackPoint.position, rayDirection);
-            // Create the ray
-            if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
-            {
-                // Do Trail stuff
-                TrailRenderer trail = Instantiate(bulletTrail, attackPoint.position, Quaternion.identity);
-                StartCoroutine(RaycastSpawnTrail(trail, hit.point, hit.normal, true));
-                // Debug
-                Debug.Log("Hit at" + hit.point);
+                Vector3 targetPoint = Vector3.zero;
 
-                // If our RayCast hit a rigidbody, add a force
-                hit.rigidbody?.AddForce(ray.direction * hitForce, ForceMode.Impulse);
-            }
-            else
-            {
-                // You have bad aim
-                Debug.Log("Miss");
+                Ray preRay = new(shootCenter.transform.position, shootCenter.transform.TransformDirection(Vector3.forward));
 
-                TrailRenderer trail = Instantiate(bulletTrail, attackPoint.position, Quaternion.identity);
+                if (Physics.Raycast(preRay, out RaycastHit preHit, Mathf.Infinity, layerMask))
+                {
+                    // If it hits, our target position is at hit.point
+                    targetPoint = preHit.point;
+                }
+                else
+                {
+                    Debug.Log("Miss");
+                    // // Else, chose a random distance.
+                    targetPoint = preRay.GetPoint(75);
+                }
 
-                StartCoroutine(RaycastSpawnTrail(trail, targetPoint, Vector3.zero, false));
+                Vector3 rayDirection = GetDirection(attackPoint.position, targetPoint);
+                // Define the ray
+                Ray ray = new(attackPoint.position, rayDirection);
+                // Create the ray
+                if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
+                {
+                    // Do Trail stuff
+                    TrailRenderer trail = Instantiate(bulletTrail, attackPoint.position, Quaternion.identity);
+                    StartCoroutine(RaycastSpawnTrail(trail, hit.point, hit.normal, true));
+                    // Debug
+                    Debug.Log("Hit at" + hit.point);
+
+                    // If our RayCast hit a rigidbody, add a force
+                    hit.rigidbody?.AddForce(ray.direction * hitForce, ForceMode.Impulse);
+                }
+                else
+                {
+                    // You have bad aim
+                    Debug.Log("Miss");
+
+                    TrailRenderer trail = Instantiate(bulletTrail, attackPoint.position, Quaternion.identity);
+
+                    StartCoroutine(RaycastSpawnTrail(trail, targetPoint, Vector3.zero, false));
+                }
             }
-        }
-        if (bulletType == BulletType.Projectile)
-        {
-            curMag -= 1;
-            // Where the crosshair is "looking"
-            Vector3 targetPoint = Vector3.zero;
-            // Define the Ray
-            Ray ray = new(shootCenter.transform.position, shootCenter.transform.TransformDirection(Vector3.forward));
-            // Create the Ray to see if we will hit something
-            if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
+            if (bulletType == BulletType.Projectile)
             {
-                // If it hits, our target position is at hit.point
-                targetPoint = hit.point;
+                curMag -= 1;
+                // Where the crosshair is "looking"
+                Vector3 targetPoint = Vector3.zero;
+                // Define the Ray
+                Ray ray = new(shootCenter.transform.position, shootCenter.transform.TransformDirection(Vector3.forward));
+                // Create the Ray to see if we will hit something
+                if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
+                {
+                    // If it hits, our target position is at hit.point
+                    targetPoint = hit.point;
+                }
+                else
+                {
+                    Debug.Log("Miss");
+                    // // Else, chose a random distance.
+                    targetPoint = ray.GetPoint(75);
+                }
+                // Define bullet direction based on direction from attackPoint to targetPoint and with useBulletSpread
+                Vector3 direction = GetDirection(attackPoint.position, targetPoint);
+                // Do the Visual bullet passing the direciton
+                VisualBullet(direction);
             }
-            else
-            {
-                Debug.Log("Miss");
-                // // Else, chose a random distance.
-                targetPoint = ray.GetPoint(75);
-            }
-            // Define bullet direction based on direction from attackPoint to targetPoint and with useBulletSpread
-            Vector3 direction = GetDirection(attackPoint.position, targetPoint);
-            // Do the Visual bullet passing the direciton
-            VisualBullet(direction);
         }
         if (usePositionalRecoil)
             playerRig.AddForce(-shootCenter.transform.forward * positionalRecoilForce, ForceMode.Impulse);
