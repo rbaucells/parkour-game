@@ -181,7 +181,6 @@ public class PlayerScript : MonoBehaviour
     private GameObject[] gunScripts;
     private PlayerInput playerInput;
     private InputAction fire;
-
     //--------------------Effects--------------------//
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;

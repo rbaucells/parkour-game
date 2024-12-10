@@ -12,9 +12,7 @@ GameObject:
   - component: {fileID: 8395112107862116489}
   - component: {fileID: 1534611650911691341}
   - component: {fileID: 7927355441091685621}
-  - component: {fileID: -9053664592053795121}
-  - component: {fileID: -6619851450942858691}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Shotgun Shell
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -109,46 +107,3 @@ CapsuleCollider:
   m_Height: 0.05766092
   m_Direction: 2
   m_Center: {x: -0.0000000055879354, y: -0.000076096505, z: 0.028392857}
---- !u!54 &-9053664592053795121
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2169085700555996049}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 119
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 136
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 1
---- !u!114 &-6619851450942858691
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2169085700555996049}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b019973d1fdf64884b91abe074d2f2bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gravity: 0
-  impactForce: 0
-  direction: {x: 0, y: 0, z: 0}
-  impactParticleSystem: {fileID: 0}

@@ -13,6 +13,8 @@ using Quaternion = UnityEngine.Quaternion;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 
+[RequireComponent(typeof(AudioSource))]
+[RequireComponent(typeof(Animator))]
 public class GunScript : MonoBehaviour
 {
     public enum FireType {
@@ -69,7 +71,7 @@ public class GunScript : MonoBehaviour
     [Header("Multiple Bullets")]
     public bool useMultipleBullets;
     public int numberOfBullets;
-    public float radius;
+    public float distanceDivision = 10f;
 
     [Header("Impact Action")]
     public float actionRadius;
@@ -232,12 +234,11 @@ public class GunScript : MonoBehaviour
         audioSource.PlayOneShot(fireAudio);
         // Particle for Muzzle Flash
         Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity, transform.GetChild(0));
+        curMag -= 1;
         for (int i = 0; i < numberOfBullets; i++)
         {
             if (bulletType == BulletType.Raycast)
             {
-                curMag -= 1;
-
                 Vector3 targetPoint = Vector3.zero;
 
                 Ray preRay = new(shootCenter.transform.position, shootCenter.transform.TransformDirection(Vector3.forward));
@@ -281,7 +282,6 @@ public class GunScript : MonoBehaviour
             }
             if (bulletType == BulletType.Projectile)
             {
-                curMag -= 1;
                 // Where the crosshair is "looking"
                 Vector3 targetPoint = Vector3.zero;
                 // Define the Ray
@@ -381,13 +381,34 @@ public class GunScript : MonoBehaviour
     {
         if (useBulletSpread)
         {
-            Vector3 spread = new(UnityEngine.Random.Range(-bulletVariance.x, bulletVariance.x), UnityEngine.Random.Range(-bulletVariance.y, bulletVariance.y), 0);
-            
-            return ((end + spread) - start).normalized;
+            // Base direction from start to end
+            Vector3 direction = (end - start).normalized;
+
+            // Calculate right and up vectors based on the direction
+            Vector3 right = Vector3.Cross(Vector3.up, direction).normalized; // Right vector
+            Vector3 up = Vector3.Cross(direction, right).normalized; // Up vector
+
+            // Spread based on distance
+            float distance = Vector3.Distance(start, end);
+            float spreadFactor = distance / 5f; // Adjust spread intensity
+
+            // Apply random spread for horizontal (right) and vertical (up)
+            float horizontalSpread = UnityEngine.Random.Range(-bulletVariance.x, bulletVariance.x) * spreadFactor;
+            float verticalSpread = UnityEngine.Random.Range(-bulletVariance.y, bulletVariance.y) * spreadFactor;
+
+            // Adjust the target position (end) with spread
+            Vector3 spread = (horizontalSpread * right + verticalSpread * up);
+
+            // Apply the spread to the target point (end)
+            Vector3 adjustedEnd = end + spread;
+
+            // Return the direction from start to the new, spread-adjusted end position
+            return (adjustedEnd - start).normalized;
         }
         else
         {
-            return(end - start).normalized;
+            return (end - start).normalized;
         }
     }
+
 }
