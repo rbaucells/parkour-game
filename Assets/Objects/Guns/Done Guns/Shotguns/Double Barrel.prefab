@@ -445,42 +445,44 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a333936d3dce49da81bdca24b3c1393, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  magSize: 2
-  fireType: 1
+  fireMode: 0
   bulletType: 1
   impactAction: 0
-  damage: 0
+  magSize: 2
   fireRateMin: 143
-  fireAnimTime: 0.417
+  useBulletSpread: 1
+  bulletVariance: {x: 0.5, y: 0.5}
+  distanceBasedSpread: 1
+  distanceDivision: 5
   useBurst: 0
   numberOfShotsInBurst: 0
   delayBetweenBursts: 0
-  useBulletSpread: 1
-  bulletVariance: {x: 0.5, y: 0.5}
-  useMultipleBullets: 1
-  numberOfBullets: 8
-  distanceDivision: 5
+  numberOfBullets: 10
+  hitForce: 9
+  trailSpeed: 200
+  bulletSpeed: 0
+  bulletGravity: 9.8
+  bulletModel: {fileID: 0}
+  multipleReloadAnim: 0
+  damage: 0
   actionRadius: 0
   actionForce: 0
   explosionUpForce: 0
+  recoilSize: 2
   usePositionalRecoil: 1
   positionalRecoilForce: 35
   layerMask:
     serializedVersion: 2
     m_Bits: 119
   attackPoint: {fileID: 4487409838573919688}
-  hitForce: 9
-  trailSpeed: 200
-  bulletSpeed: 0
-  bulletGravity: 9.8
-  bulletObject: {fileID: 0}
-  bulletParent: {fileID: 0}
   reloadAudio: {fileID: 8300000, guid: b50a6c8328c274a77b85993e0eb8022e, type: 3}
   fireAudio: {fileID: 8300000, guid: f2a029d57c0b3467e9efb3bee9fae1d3, type: 3}
+  audio1: {fileID: 0}
+  audio2: {fileID: 0}
+  audio3: {fileID: 0}
   muzzleParticleSystem: {fileID: 198234346748616026, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
-  impactParticleSystem: {fileID: 1874733766879046132, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
-  recoilSize: 2
+  impactParticleSystem: {fileID: 1874733766879046132, guid: 89c33602d4a554358af318142b4c080f, type: 3}
 --- !u!82 &886166742129282672
 AudioSource:
   m_ObjectHideFlags: 0

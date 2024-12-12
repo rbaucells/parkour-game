@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Unity.Collections.LowLevel.Unsafe;
@@ -15,9 +17,10 @@ using Vector3 = UnityEngine.Vector3;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Animator))]
+
 public class GunScript : MonoBehaviour
 {
-    public enum FireType {
+    public enum FireMode {
         Auto, 
         SemiAuto
     };
@@ -38,106 +41,152 @@ public class GunScript : MonoBehaviour
         Explode,
         Implode
     };
-    
-    [Header("Magazine")]
-    public float magSize;
-    private float curMag;
-
-    [Header("Shooting Type")]
-    public FireType fireType;
-    public BulletType bulletType;
-    public ImpactAction impactAction;
-
-    [Header("Damage")]
-    public float damage;
-
+    //--------------------Gun Options--------------------//
+    [Header("Gun Options")]
+    public FireMode fireMode; // Auto, SemiAuto
+    public BulletType bulletType; // Projectile, Raycast
+    public ImpactAction impactAction; // Explode, Implode, None
+    //--------------------Magazine--------------------//
+    [Header("Magazine Options")]
+    public int magSize;
+    private int curMag;
+    //--------------------Fire Rate--------------------//
     [Header("Fire Rate")]
     public float fireRateMin = 60f;
-    public float fireAnimTime;
+
     private float delayBetweenShots;
+
     private float nextFireTime = 0.0f;
-
-    [Header("Burst Firing")]
-    public bool useBurst = false;
-    public int numberOfShotsInBurst;
-    public float delayBetweenBursts;
-    private bool curBursting = false;
-    private int shotsTaken;
-
+    //--------------------Bullet Spread--------------------//
     [Header("Bullet Spread")]
     public bool useBulletSpread;
     public Vector2 bulletVariance;
+    public bool distanceBasedSpread = true;
+    public float distanceDivision = 10f; // Applies more spread if distance larger than distanceDivions, less if distance less than distanceDivision
 
+    //--------------------Burst Fire--------------------//
+    [Header("Burst Fire")]
+    public bool useBurst = false;
+    public int numberOfShotsInBurst;
+    public float delayBetweenBursts;
+
+    private bool curBursting = false;
+
+    //--------------------Multiple Bullets--------------------//
     [Header("Multiple Bullets")]
-    public bool useMultipleBullets;
-    public int numberOfBullets;
-    public float distanceDivision = 10f;
+    public int numberOfBullets = 1;
 
+    //--------------------Raycast Options--------------------//
+    [Header("Raycast Options")]
+    public float hitForce;
+    public float trailSpeed;
+
+    //--------------------Projectile Options--------------------//
+    [Header("Projectile Settings")]
+    public float bulletSpeed;
+    public float bulletGravity = 9.8f;
+    [OptionalField] public GameObject bulletModel;
+
+    //--------------------Reloading--------------------//
+    [Header("Reloading Options")]
+    public bool multipleReloadAnim;
+
+    private bool reloading;
+
+    //--------------------Damage--------------------//
+    [Header("Damage")]
+    public float damage;
+
+    //--------------------Impact Action--------------------//
     [Header("Impact Action")]
     public float actionRadius;
     public float actionForce;
     public float explosionUpForce;
 
+    //--------------------Recoil--------------------//
     [Header("Recoil")]
-    private Rigidbody playerRig;
+    public RecoilSize recoilSize;
     public bool usePositionalRecoil;
     public float positionalRecoilForce;
+    private int recoilInt; // 1 = Small, 2 = Medium, 3 = Big
 
-    [Header("Other")]
+    //--------------------References--------------------//
+    [Header("References")]
     public LayerMask layerMask;
     public Transform attackPoint;
     private GameObject shootCenter;
+    private Rigidbody playerRig;
+    private Animator anim;
+    private AudioSource audioSource;
+    private PlayerScript playerScript;
 
-    [Space(10)]
+    //--------------------Audio--------------------//
+    [Header("Audio")]
+    [OptionalField] public AudioClip reloadAudio;
+    [OptionalField] public AudioClip fireAudio;
 
-    [Header("Raycast Options")]
-    public float hitForce;
-    public float trailSpeed;
+    [OptionalField] public AudioClip audio1;
+    [OptionalField] public AudioClip audio2;
+    [OptionalField] public AudioClip audio3;
 
-    [Header("Projectile Settings")]
-    public float bulletSpeed;
-    public float bulletGravity = 9.8f;
-    public GameObject bulletObject;
-    public Transform bulletParent;
-    private GameObject curBullet;
 
-    [Header("Effects")]
-        [Header("Audio")]
-        public AudioClip reloadAudio;
-        public AudioClip fireAudio;
+    //--------------------Particles--------------------//
+    [Header("Particles")]
+    public ParticleSystem muzzleParticleSystem;
+    public TrailRenderer bulletTrail;
+    public ParticleSystem impactParticleSystem;
 
-        [Header("Particles")]
-        public ParticleSystem muzzleParticleSystem;
-        public ParticleSystem impactParticleSystem;
-        public TrailRenderer bulletTrail;
+    //--------------------Animations--------------------//
+    [Header("Animations")]
+    private float fireAnimTime;
+    private float reloadAnimTime;
+    private float reloadInAnimTime;
 
-        [Header("Animations")]
-        private Animator anim;
-        private AudioSource audioSource;
-        private PlayerScript playerScript;
-        public RecoilSize recoilSize;
-        private int recoilInt;
+    #region Start
 
-    void Awake()
+    void Awake() // Called Before First Frame
     {
-        // Get Components
-        anim = GetComponent<Animator>();
-        audioSource = GetComponent<AudioSource>();
-        // Set Shoot Type from FireType enum
-        SetRecoilSize();
-        // Get ShootCenter
-        shootCenter = GameObject.Find("Shooter");
+        DefineComponents();
 
-        delayBetweenShots = 60/fireRateMin;
+        SetAnimClipSizes();
+        SetRecoilSize();
 
         Debug.Log("Max Fire Rate: " + 60/fireAnimTime);
+    }
+
+    void DefineComponents() // Called in Awake(). Sets Referencs
+    {
+        anim = GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
+
+        shootCenter = GameObject.Find("Shooter");
+        delayBetweenShots = 60/fireRateMin;
 
         playerScript = GetComponentInParent<PlayerScript>();
-
         playerRig = playerScript.gameObject.GetComponent<Rigidbody>();
     }
 
-    void SetRecoilSize()
+    void SetAnimClipSizes() // Called in Awake(). Defines animTime values
+    {
+        AnimationClip[] clips = anim.runtimeAnimatorController.animationClips;
+        foreach(AnimationClip clip in clips)
+        {
+            switch(clip.name)
+            {
+                case "Fire":
+                    fireAnimTime = clip.length;
+                    break;
+                case "Reload":
+                    reloadAnimTime = clip.length;
+                    break;
+                case "Reload In":
+                    reloadInAnimTime = clip.length;
+                    break;
+            }
+        }
+    }
+
+    void SetRecoilSize() // Called in Awake(). Defines recoilInt base on RecoilSize enum.
     {
         switch (recoilSize)
         {
@@ -152,41 +201,113 @@ public class GunScript : MonoBehaviour
                 break;
         }
     }
+    #endregion
+    #region Reload
 
-    public void Reload()
+    public void Reload() // Called from PlayerScript.Reload(). Reloads
     {
-        if (ReadyToAnim())
+        if (ReadyToAnim() && !reloading && curMag != magSize)
         {
-            // Reset Mag size
-            curMag = magSize;
-            // Play Animation "Reload"
-            anim.Play("Reload", 0, 0.0f);
-            // Play Reload Audio 
-            audioSource.PlayOneShot(reloadAudio);
+            if (multipleReloadAnim)
+            {
+                StartCoroutine(RepeatReload());
+            }
+            else
+            {
+                reloading = true;
+                // Play Animation "Reload"
+                anim.Play("Reload", 0, 0.0f);
+                // Play Reload Audio 
+                audioSource.PlayOneShot(reloadAudio);
+
+                Invoke(nameof(ResetMagSize), reloadAnimTime);
+            }
         }
     }
 
-    public void SemiAutoFire()
+    void ResetMagSize() // Called from Reload() after delay. Resets magSize once reloadAnim is done
     {
-        // If SemiAuto selected
-        if (!useBurst && curMag != 0 && fireType == FireType.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
+        // Reset Mag size
+        curMag = magSize;
+        reloading = false;
+    }
+
+    IEnumerator RepeatReload() // Called from Reload(). For use in Multi-Reload guns. Pump Shotguns
+    {
+        reloading = true;
+
+        // Trigger the rotation into reload (transition in)
+        anim.Play("Reload In", 0, 0.0f);
+
+        yield return new WaitForSeconds(reloadInAnimTime);
+
+        // Start reloading
+        while (curMag < magSize)
+        {
+            anim.Play("Reload", 0, 0.0f);
+            audioSource.PlayOneShot(reloadAudio);
+            curMag++;
+
+            Debug.Log("Reload");
+            yield return new WaitForSeconds(reloadAnimTime);
+        }
+
+        // Trigger the rotation out of reload (transition out)
+        anim.Play("Reload Out", 0, 0.0f);
+        reloading = false;
+    }
+    #endregion
+    #region Fire
+
+    public void SemiAutoFire() // Called from PlayerScript.OnFireInput()
+    {
+        if (!useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
         {
             Shoot();
             return;
         }
 
-        if (!curBursting && useBurst && curMag != 0 && fireType == FireType.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
+        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
         }
 
         if (curMag == 0)
         {
-            Reload();
+            StartCoroutine(WaitForReload());
         }
     }
 
-    IEnumerator RepeatFire(int shotsNumber)
+    public void FullAutoFire() // Called from PlayerScript.OnFireInput() and PlayerScript.FixedUpdate
+    {
+        if (!useBurst && curMag != 0 && fireMode == FireMode.Auto && Time.time >= nextFireTime && ReadyToAnim())
+        {
+            Shoot();
+            return;
+        }
+
+        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.Auto && Time.time >= nextFireTime && ReadyToAnim())
+        {
+            StartCoroutine(RepeatFire(numberOfShotsInBurst));
+        }
+
+        if (curMag == 0)
+        {
+            StartCoroutine(WaitForReload());
+        }
+    }
+
+    IEnumerator WaitForReload()
+    {
+        while (Time.time < nextFireTime)
+        {
+            yield return null;
+        }
+
+        Reload();
+    }
+
+    IEnumerator RepeatFire(int shotsNumber) // Called from SemiAutoFire() and FullAutoFire(). Calls Shoot function repeatedly
     {
         curBursting = true;
 
@@ -199,32 +320,12 @@ public class GunScript : MonoBehaviour
         Invoke(nameof(DelayedBurstingOff), delayBetweenBursts);
     }
 
-    void DelayedBurstingOff()
+    void DelayedBurstingOff() // Called from RepeatFire(). Doesn't allow Bursting until delay
     {
         curBursting = false;
     }
 
-    public void FullAutoFire()
-    {
-        // If SemiAuto selected
-        if (!useBurst && curMag != 0 && fireType == FireType.Auto && Time.time >= nextFireTime && ReadyToAnim())
-        {
-            Shoot();
-            return;
-        }
-
-        if (!curBursting && useBurst && curMag != 0 && fireType == FireType.Auto && Time.time >= nextFireTime && ReadyToAnim())
-        {
-            StartCoroutine(RepeatFire(numberOfShotsInBurst));
-        }
-
-        if (curMag == 0)
-        {
-            Reload();
-        }
-    }
-
-    void Shoot()
+    void Shoot() // Called from SemiAutoFire(), FullAutoFire() and RepeatFire(). Shoots
     {
         nextFireTime = Time.time + delayBetweenShots;
         // Play "Fire" animation
@@ -233,7 +334,9 @@ public class GunScript : MonoBehaviour
         // Play the audio fireAudio
         audioSource.PlayOneShot(fireAudio);
         // Particle for Muzzle Flash
-        Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity, transform.GetChild(0));
+        ParticleSystem muzzleParticle = Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity);
+        
+        muzzleParticle.gameObject.transform.parent = transform.GetChild(0);
         curMag -= 1;
         for (int i = 0; i < numberOfBullets; i++)
         {
@@ -308,7 +411,7 @@ public class GunScript : MonoBehaviour
             playerRig.AddForce(-shootCenter.transform.forward * positionalRecoilForce, ForceMode.Impulse);
     }
 
-    private IEnumerator RaycastSpawnTrail(TrailRenderer Trail, Vector3 HitPoint, Vector3 HitNormal, bool MadeImpact)
+    private IEnumerator RaycastSpawnTrail(TrailRenderer Trail, Vector3 HitPoint, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path
     {
         Vector3 startPosition = Trail.transform.position;
         float distance = Vector3.Distance(Trail.transform.position, HitPoint);
@@ -332,52 +435,51 @@ public class GunScript : MonoBehaviour
         Destroy(Trail.gameObject, Trail.time);
     }
 
-    void VisualBullet(Vector3 direction)
+    void VisualBullet(Vector3 direction) // Called from Shoot(). Spawns bullet and adds forces
     {
-            // Create the Visual Bullet
-            curBullet = Instantiate(bulletObject, Vector3.zero, Quaternion.identity, bulletParent);
-            // Create the BulletTrail and attach it to curBullet
-            Instantiate(bulletTrail, Vector3.zero, Quaternion.identity, curBullet.transform);
-            // Set Pos and Rot
-            curBullet.transform.localPosition = attackPoint.localPosition;
-            // Get rid of Parent
-            curBullet.transform.parent = null;
-            // Rotate bullet to point at crosshair
-            curBullet.transform.forward = direction;
-            // Access the Rigidbody
-            Rigidbody rig = curBullet.GetComponent<Rigidbody>();
-            // Add the Force
-            rig.AddForce(direction * bulletSpeed, ForceMode.Impulse);
-            // Access the Bullet Script
-            BulletScript bulletScript = curBullet.GetComponent<BulletScript>();
-            // Set the bulletGravity Accel
-            bulletScript.gravity = bulletGravity;
-            // Assign the Impact Particle System
-            bulletScript.impactParticleSystem = impactParticleSystem;
-            bulletScript.actionForce = actionForce;
-            bulletScript.explosionUpForce = explosionUpForce;
-            bulletScript.actionRadius = actionRadius;
-            if (impactAction == ImpactAction.Explode)
-            {
-                bulletScript.action = 0;
-            }
-            else if (impactAction == ImpactAction.Implode)
-            {
-                bulletScript.action = 1;
-            }
-            else
-            {
-                bulletScript.action = 3;
-            }
+        // Create the Visual Bullet
+        GameObject curBullet = Instantiate(bulletModel, Vector3.zero, Quaternion.identity);
+        // Create the BulletTrail and attach it to curBullet
+        Instantiate(bulletTrail, Vector3.zero, Quaternion.identity, curBullet.transform);
+        // Set Pos and Rot
+        curBullet.transform.position = attackPoint.position;
+        // Rotate bullet to point at crosshair
+        curBullet.transform.forward = direction;
+        // Access the Rigidbody
+        Rigidbody rig = curBullet.GetComponent<Rigidbody>();
+        // Add the Force
+        rig.AddForce(direction * bulletSpeed, ForceMode.Impulse);
+        // Access the Bullet Script
+        BulletScript bulletScript = curBullet.GetComponent<BulletScript>();
+        // Set the bulletGravity Accel
+        bulletScript.gravity = bulletGravity;
+        // Assign the Impact Particle System
+        bulletScript.impactParticleSystem = impactParticleSystem;
+        bulletScript.actionForce = actionForce;
+        bulletScript.explosionUpForce = explosionUpForce;
+        bulletScript.actionRadius = actionRadius;
+        if (impactAction == ImpactAction.Explode)
+        {
+            bulletScript.action = 0;
+        }
+        else if (impactAction == ImpactAction.Implode)
+        {
+            bulletScript.action = 1;
+        }
+        else
+        {
+            bulletScript.action = 3;
+        }
     }
+    #endregion
+    #region Utilities
 
-    bool ReadyToAnim()
+    bool ReadyToAnim() // Returns true if no other anim playing
     {
-        // Return true if no other anim playing
         return anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 1 && !anim.IsInTransition(0);
     }
 
-    Vector3 GetDirection(Vector3 start, Vector3 end)
+    Vector3 GetDirection(Vector3 start, Vector3 end) // Gives direction using Spread and distanceBasedSpread
     {
         if (useBulletSpread)
         {
@@ -391,6 +493,11 @@ public class GunScript : MonoBehaviour
             // Spread based on distance
             float distance = Vector3.Distance(start, end);
             float spreadFactor = distance / 5f; // Adjust spread intensity
+
+            if (!distanceBasedSpread)
+            {
+                spreadFactor = 1;
+            }
 
             // Apply random spread for horizontal (right) and vertical (up)
             float horizontalSpread = UnityEngine.Random.Range(-bulletVariance.x, bulletVariance.x) * spreadFactor;
@@ -409,6 +516,22 @@ public class GunScript : MonoBehaviour
         {
             return (end - start).normalized;
         }
+
+        #endregion
     }
 
+    public void PlayAudio1()
+    {
+        audioSource.PlayOneShot(audio1);
+    }
+
+    public void PlayAudio2()
+    {
+        audioSource.PlayOneShot(audio2);
+    }
+
+    public void PlayAudio3()
+    {
+        audioSource.PlayOneShot(audio3);
+    }
 }

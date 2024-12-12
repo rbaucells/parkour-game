@@ -142,7 +142,7 @@ public class PlayerScript : MonoBehaviour
     private const float wallTolerance = 0.1f; // Tolerance for horizontal proximity to wall
     private const float wallHeightThreshold = 1.0f; // Height difference to check walls relative to player
 
-    
+    private bool wallrunning;
     private ISet<Collider> wallColliders = new HashSet<Collider>();
     //--------------------Dash--------------------//
     [Header("Dash")]
@@ -667,8 +667,6 @@ public class PlayerScript : MonoBehaviour
                 Debug.Log("Wall Run Left In");
                 camAnim.Play("Wall Run Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
             }
-
-            wasWallGrounded = wallGrounded;
         }
         else if (!wallGrounded)
         {   
@@ -692,8 +690,8 @@ public class PlayerScript : MonoBehaviour
             {
                 isWallInBack = false;
             }
-            wasWallGrounded = wallGrounded;
         }
+        wasWallGrounded = wallGrounded;
     }
 
     void Jump() // Called in OnJumpInput() On First Frame. Determines Direction to Jump In
