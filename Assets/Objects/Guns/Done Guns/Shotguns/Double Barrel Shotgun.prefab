@@ -410,7 +410,7 @@ GameObject:
   - component: {fileID: 886166742129282672}
   - component: {fileID: 2933437718290237711}
   m_Layer: 6
-  m_Name: Double Barrel
+  m_Name: Double Barrel Shotgun
   m_TagString: Gun
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
