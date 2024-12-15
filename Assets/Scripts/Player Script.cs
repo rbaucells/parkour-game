@@ -155,17 +155,9 @@ public class PlayerScript : MonoBehaviour
     //--------------------Grapple--------------------//
     [Header("Grapple")]
     public float maxGrappleDistance;
-    public float force;
-    private bool grappling;
 
-    private Vector3 grapplePoint;
-    
-    public float grappleSpring = 4.5f;
-    public float grappleDamper = 7f;
-    public float grappleMassScale = 4.5f;
-
-    public float grappleMinDistanceMultiplier = 0.25f;
-    public float grappleMaxDistanceMultiplier = 0.8f;
+    public float damper;
+    public float spring;
     //--------------------References--------------------//
     [Header("References")]
     public TextMeshProUGUI speedText;
@@ -258,7 +250,6 @@ public class PlayerScript : MonoBehaviour
     void LateUpdate() // Called After All Other Update Functions
     {
         Camera();
-        DrawLine();
     }
 
     void ApplyGravity() // Called in Fixed Update(). Applies Gravity to Player.
@@ -361,16 +352,6 @@ public class PlayerScript : MonoBehaviour
         transform.eulerAngles += new Vector3(0, deltaMouseValue.x * lookSenseToUse, 0);
     }
 
-    void DrawLine()
-    {
-        if (grappling)
-        {
-            lineRenderer.positionCount = 2;
-            lineRenderer.SetPosition(0, cameraContainer.position);
-            lineRenderer.SetPosition(1, grapplePoint);
-        }
-    }
-
     #endregion
 
     #region Input
@@ -471,34 +452,11 @@ public class PlayerScript : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Performed)
         {
-            SpringJoint springJoint = gameObject.AddComponent<SpringJoint>();
-            RaycastHit hit;
-            if (Physics.Raycast(cameraContainer.transform.position, cameraContainer.transform.forward, out hit, maxGrappleDistance))
-            {
-                grappling = true;
 
-                springJoint.autoConfigureConnectedAnchor = false;
-
-                grapplePoint = hit.point;
-                springJoint.anchor = grapplePoint;
-
-                springJoint.enableCollision = true;
-
-                float distance = Vector3.Distance(transform.position, grapplePoint);
-
-                springJoint.minDistance = distance * grappleMinDistanceMultiplier;
-                springJoint.maxDistance = distance * grappleMaxDistanceMultiplier;
-
-                springJoint.spring = grappleSpring;
-                springJoint.damper = grappleDamper;
-                springJoint.massScale = grappleMassScale;
-            }
         }
         else if (context.phase == InputActionPhase.Canceled)
         {
-            grappling = false;
-            grapplePoint = Vector3.zero;
-            Destroy(gameObject.GetComponent<SpringJoint>());
+            
         }
     }
 
@@ -668,7 +626,7 @@ public class PlayerScript : MonoBehaviour
                 camAnim.Play("Wall Run Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
             }
         }
-        else if (!wallGrounded)
+        else if (!wallGrounded && wasWallGrounded && !grounded)
         {   
             if (isWallOnRight)
             {

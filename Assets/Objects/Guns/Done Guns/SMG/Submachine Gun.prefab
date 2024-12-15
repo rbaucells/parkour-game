@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 5337643537448230987}
   - component: {fileID: 3952423910547697638}
   m_Layer: 6
-  m_Name: Sub-Machine-Gun
+  m_Name: Submachine Gun
   m_TagString: Gun
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
