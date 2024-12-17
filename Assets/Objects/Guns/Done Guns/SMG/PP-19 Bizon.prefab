@@ -389,8 +389,8 @@ Transform:
   m_GameObject: {fileID: 4580349189711657112}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5, y: 0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: -1.359, y: 0.429, z: 1.129}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1.6, y: 1.2, z: 1.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4563570801396439067}
@@ -557,6 +557,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 119
   attackPoint: {fileID: 3718351307850057761}
+  weaponPos:
+  - {x: 1.1, y: -0.6, z: 0.85}
+  - {x: -1.1, y: -0.6, z: 0.85}
+  - {x: -1.1, y: 0.45, z: 0.85}
+  - {x: 1.1, y: 0.45, z: 0.85}
   reloadAudio: {fileID: 0}
   fireAudio: {fileID: 8300000, guid: d28a3c117a5054c29bbbffa9236806b6, type: 3}
   audio1: {fileID: 8300000, guid: 7fdfbd8ece13d4c868dc4cc733744ba3, type: 3}

@@ -57,7 +57,7 @@ Transform:
   m_GameObject: {fileID: 712331320912987447}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.19, y: -5.46, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -221,15 +221,15 @@ Transform:
   m_GameObject: {fileID: 2827669073506615591}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.19, y: 5.35, z: 0}
+  m_LocalPosition: {x: 1.19, y: 4.15, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1408824914684301714}
   - {fileID: 5085211568563299648}
   - {fileID: 546397510356685111}
   - {fileID: 6155621441278049302}
   - {fileID: 1865512559435085542}
-  - {fileID: 1408824914684301714}
   - {fileID: 2327702435915214990}
   - {fileID: 4520622701227541747}
   m_Father: {fileID: 3921161791269204517}
@@ -324,8 +324,8 @@ Transform:
   m_GameObject: {fileID: 3356548851287962456}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5, y: 0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: -2.16, y: -1, z: 2.75}
-  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
+  m_LocalPosition: {x: 9, y: 9, z: 0}
+  m_LocalScale: {x: 0.15, y: 0.15, z: 0.15}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3921161791269204517}
@@ -465,8 +465,8 @@ MonoBehaviour:
   fireMode: 0
   bulletType: 1
   impactAction: 0
-  magSize: 24
-  fireRateMin: 1200
+  magSize: 60
+  fireRateMin: 600
   useBulletSpread: 1
   bulletVariance: {x: 0.4, y: 0.4}
   distanceBasedSpread: 1
@@ -492,6 +492,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 119
   attackPoint: {fileID: 4520622701227541747}
+  weaponPos:
+  - {x: 1.103, y: -0.665, z: 0.968}
+  - {x: -1.103, y: -0.665, z: 0.968}
+  - {x: -1.103, y: 0.39, z: 0.968}
+  - {x: 1.103, y: 0.39, z: 0.968}
   reloadAudio: {fileID: 0}
   fireAudio: {fileID: 8300000, guid: 5246779d4892a468987f7f8805d31eef, type: 3}
   audio1: {fileID: 8300000, guid: 520daaa281bd04b6fa15a7b623f4f389, type: 3}
@@ -500,6 +505,8 @@ MonoBehaviour:
   muzzleParticleSystem: {fileID: 198234346748616026, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
   impactParticleSystem: {fileID: 1874733766879046132, guid: 89c33602d4a554358af318142b4c080f, type: 3}
+  fireAction: {fileID: 1846730345673504035, guid: d96c9f9d792c1fd4c852050183f7e583, type: 3}
+  reloadAction: {fileID: -2622344404044345238, guid: d96c9f9d792c1fd4c852050183f7e583, type: 3}
 --- !u!1 &3980786437184996278
 GameObject:
   m_ObjectHideFlags: 0
@@ -713,9 +720,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6886798877399822565}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.00000005268358, y: -0.7071066, z: 0.00000005268355, w: 0.70710695}
-  m_LocalPosition: {x: 0.120188646, y: -7.2308693, z: -0.0000020179136}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: 0.000000059604638, y: -0.70710665, z: 0.000000059604645, w: 0.707107}
+  m_LocalPosition: {x: 0.12018919, y: -6.0308695, z: 0}
+  m_LocalScale: {x: 1, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 476560869461275157}

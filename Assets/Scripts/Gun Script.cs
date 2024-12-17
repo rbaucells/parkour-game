@@ -120,6 +120,8 @@ public class GunScript : MonoBehaviour
     private AudioSource audioSource;
     private PlayerScript playerScript;
 
+    //--------------------Positions--------------------//
+    public Vector3[] weaponPos = new Vector3[4];
     //--------------------Audio--------------------//
     [Header("Audio")]
     [OptionalField] public AudioClip reloadAudio;
@@ -128,7 +130,6 @@ public class GunScript : MonoBehaviour
     [OptionalField] public AudioClip audio1;
     [OptionalField] public AudioClip audio2;
     [OptionalField] public AudioClip audio3;
-
 
     //--------------------Particles--------------------//
     [Header("Particles")]
@@ -141,6 +142,12 @@ public class GunScript : MonoBehaviour
     private float fireAnimTime;
     private float reloadAnimTime;
     private float reloadInAnimTime;
+    //--------------------Input--------------------//
+    public InputActionReference fireAction;
+    public InputActionReference reloadAction;
+
+    private bool firingActionHeld;
+    private bool reloadActionHeld;
 
     #region Start
 
@@ -199,6 +206,24 @@ public class GunScript : MonoBehaviour
             case RecoilSize.Big:
                 recoilInt = 3;
                 break;
+        }
+    }
+    #endregion
+    #region Update
+    void Update()
+    {
+        if (fireMode == FireMode.Auto && fireAction.action.IsPressed())
+        {
+            FullAutoFire();
+        }
+        else if (fireMode == FireMode.SemiAuto && fireAction.action.WasPressedThisFrame())
+        {
+            SemiAutoFire();
+        }
+
+        if (reloadAction.action.WasPressedThisFrame())
+        {
+            Reload();
         }
     }
     #endregion
@@ -261,13 +286,13 @@ public class GunScript : MonoBehaviour
 
     public void SemiAutoFire() // Called from PlayerScript.OnFireInput()
     {
-        if (!useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
+        if (!useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.fixedTime >= nextFireTime)
         {
             Shoot();
             return;
         }
 
-        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.time >= nextFireTime && ReadyToAnim())
+        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.fixedTime >= nextFireTime)
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
         }
@@ -280,13 +305,13 @@ public class GunScript : MonoBehaviour
 
     public void FullAutoFire() // Called from PlayerScript.OnFireInput() and PlayerScript.FixedUpdate
     {
-        if (!useBurst && curMag != 0 && fireMode == FireMode.Auto && Time.time >= nextFireTime && ReadyToAnim())
+        if (!useBurst && curMag != 0 && Time.fixedTime >= nextFireTime && ReadyToAnim())
         {
             Shoot();
             return;
         }
 
-        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.Auto && Time.time >= nextFireTime && ReadyToAnim())
+        if (!curBursting && useBurst && curMag != 0 && Time.fixedTime >= nextFireTime && ReadyToAnim())
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
         }
@@ -327,7 +352,7 @@ public class GunScript : MonoBehaviour
 
     void Shoot() // Called from SemiAutoFire(), FullAutoFire() and RepeatFire(). Shoots
     {
-        nextFireTime = Time.time + delayBetweenShots;
+        nextFireTime = Time.fixedTime + delayBetweenShots;
         // Play "Fire" animation
         anim.Play("Fire", 0, 0.0f);
         playerScript.DoFireAnim(recoilInt);
@@ -335,7 +360,6 @@ public class GunScript : MonoBehaviour
         audioSource.PlayOneShot(fireAudio);
         // Particle for Muzzle Flash
         ParticleSystem muzzleParticle = Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity);
-        
         muzzleParticle.gameObject.transform.parent = transform.GetChild(0);
         curMag -= 1;
         for (int i = 0; i < numberOfBullets; i++)
@@ -516,9 +540,10 @@ public class GunScript : MonoBehaviour
         {
             return (end - start).normalized;
         }
-
-        #endregion
     }
+    #endregion
+
+    
 
     public void PlayAudio1()
     {

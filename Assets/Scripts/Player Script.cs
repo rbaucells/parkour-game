@@ -166,13 +166,14 @@ public class PlayerScript : MonoBehaviour
     private Animator camAnim;
     private Rigidbody rig;
     public Transform shootCenter;
-    private LineRenderer lineRenderer;
 
     //--------------------Weapons--------------------//
     [Header("Weapons")]
+    public GameObject[] gunInventory;
     private GameObject[] gunScripts;
     private PlayerInput playerInput;
     private InputAction fire;
+    private bool firing;
     //--------------------Effects--------------------//
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;
@@ -190,6 +191,19 @@ public class PlayerScript : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         // Every 3 Seconds, Check for input change
         InvokeRepeating(nameof(CheckIfInputChange), 0.0f, 3f);
+        
+        int counter = 0;
+
+        GameObject weaponContainer = cameraContainer.transform.GetChild(1).gameObject;
+
+        foreach (GameObject gunObject in gunInventory)
+        {
+            GameObject curGun = Instantiate(gunObject, weaponContainer.transform);
+            curGun.transform.localPosition = curGun.GetComponent<GunScript>().weaponPos[counter];
+            counter += 1;
+        }
+
+        gunScripts = GameObject.FindGameObjectsWithTag("Gun");
     }
 
     void InitializeComponents() // Called In Awake(). To Define References
@@ -198,10 +212,8 @@ public class PlayerScript : MonoBehaviour
         rig = GetComponent<Rigidbody>();
         capsuleCollider = GetComponent<CapsuleCollider>();
 
-        gunScripts = GameObject.FindGameObjectsWithTag("Gun");
         cameraContainer = GameObject.Find("Camera Container").transform;
         camAnim = cameraContainer.GetComponent<Animator>();
-        lineRenderer = cameraContainer.GetComponent<LineRenderer>();
 
         fire = playerInput.actions["Shoot"];
     }
@@ -242,7 +254,6 @@ public class PlayerScript : MonoBehaviour
 
         GroundedDisableSlam();
         UpdateCrouchingThings();
-        AutoFire();
         // Speedometer Text
         speedText.text = "Current Speed: " + Mathf.RoundToInt(new Vector3(currentXSpeed, currentYSpeed, currentZSpeed).magnitude) + "m/s";
     }
@@ -328,18 +339,6 @@ public class PlayerScript : MonoBehaviour
         capsuleCollider.height = curColHeight;
         capsuleCollider.center = Vector3.up * curColCenter;
     }
-
-    void AutoFire() // Called In Fixed Update(). To Call Gun's Auto-Fire Function while Fire Button Is Held
-    {
-        if (fire.IsPressed())
-        {
-            foreach (GameObject currentGunObject in gunScripts)
-            {
-                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
-                gunScript.FullAutoFire();
-            }
-        }
-    }
     
     void Camera() // Called In Late Update(). Rotates Camera and Player as Needed
     {
@@ -416,32 +415,7 @@ public class PlayerScript : MonoBehaviour
             UnCrouch();
         }
     }
-
     
-    public void OnReloadInput(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Performed)
-        {
-            foreach (GameObject currentGunObject in gunScripts)
-            {
-                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
-                gunScript.Reload();
-            }
-        }
-    }
-
-    public void OnFireInput(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Performed)
-        {
-            foreach (GameObject currentGunObject in gunScripts)
-            {
-                GunScript gunScript = currentGunObject.GetComponent<GunScript>();
-                gunScript.SemiAutoFire();
-            }
-        }
-    }
-
     public void OnExitInput(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed)

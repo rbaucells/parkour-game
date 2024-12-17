@@ -439,11 +439,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 108154452}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!4 &111389184 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-  m_PrefabInstance: {fileID: 610004479}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &134638077
 GameObject:
   m_ObjectHideFlags: 0
@@ -2351,63 +2346,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 596711986}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1001 &610004479
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 7614412181197530792}
-    m_Modifications:
-    - target: {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_Name
-      value: Double Barrel Shotgun
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 1.28
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -0.68
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8713200991305855260, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
 --- !u!1 &612169311
 GameObject:
   m_ObjectHideFlags: 0
@@ -7487,7 +7425,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8289440858660271685}
-  - {fileID: 111389184}
   m_Father: {fileID: 891919486772408319}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &7969007692901562856
@@ -7498,14 +7435,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3847371285132970422}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: -0.15608975, z: 0, w: 0.9877429}
   m_LocalPosition: {x: 0, y: 14.01, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 891919486772408319}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -17.96, z: 0}
 --- !u!4 &8148249024805056611
 Transform:
   m_ObjectHideFlags: 0
@@ -7668,6 +7605,8 @@ MonoBehaviour:
   spring: 10
   speedText: {fileID: 645401587}
   shootCenter: {fileID: 8289440858660271685}
+  gunInventory:
+  - {fileID: 3356548851287962456, guid: 8aa4c317fe294438d8105b2502a3df1a, type: 3}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: cdea3df57c0534f4083ad7b62c2ce30c, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
