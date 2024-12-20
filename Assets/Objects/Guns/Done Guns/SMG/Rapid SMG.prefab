@@ -466,7 +466,7 @@ MonoBehaviour:
   bulletType: 1
   impactAction: 0
   magSize: 60
-  fireRateMin: 600
+  fireRateMin: 1199
   useBulletSpread: 1
   bulletVariance: {x: 0.4, y: 0.4}
   distanceBasedSpread: 1

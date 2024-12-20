@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -11,6 +12,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using Debug = UnityEngine.Debug;
 using Quaternion = UnityEngine.Quaternion;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -57,6 +59,8 @@ public class GunScript : MonoBehaviour
     private float delayBetweenShots;
 
     private float nextFireTime = 0.0f;
+
+    private float lastFireTime = 0.0f;
     //--------------------Bullet Spread--------------------//
     [Header("Bullet Spread")]
     public bool useBulletSpread;
@@ -210,6 +214,7 @@ public class GunScript : MonoBehaviour
     }
     #endregion
     #region Update
+
     void Update()
     {
         if (fireMode == FireMode.Auto && fireAction.action.IsPressed())
@@ -226,6 +231,7 @@ public class GunScript : MonoBehaviour
             Reload();
         }
     }
+
     #endregion
     #region Reload
 
@@ -286,15 +292,16 @@ public class GunScript : MonoBehaviour
 
     public void SemiAutoFire() // Called from PlayerScript.OnFireInput()
     {
-        if (!useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.fixedTime >= nextFireTime)
+        if (!useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && CanFire())
         {
             Shoot();
             return;
         }
 
-        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && Time.fixedTime >= nextFireTime)
+        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && CanFire())
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
+            return;
         }
 
         if (curMag == 0)
@@ -305,21 +312,28 @@ public class GunScript : MonoBehaviour
 
     public void FullAutoFire() // Called from PlayerScript.OnFireInput() and PlayerScript.FixedUpdate
     {
-        if (!useBurst && curMag != 0 && Time.fixedTime >= nextFireTime && ReadyToAnim())
+        if (!useBurst && curMag != 0 && CanFire() && ReadyToAnim())
         {
+            Debug.Log("Time Since Last Shot: ");
             Shoot();
             return;
         }
 
-        if (!curBursting && useBurst && curMag != 0 && Time.fixedTime >= nextFireTime && ReadyToAnim())
+        if (!curBursting && useBurst && curMag != 0 && CanFire() && ReadyToAnim())
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
+            return;
         }
 
         if (curMag == 0)
         {
             StartCoroutine(WaitForReload());
         }
+    }
+
+    bool CanFire()
+    {
+        return Time.time >= nextFireTime;
     }
 
     IEnumerator WaitForReload()
@@ -352,7 +366,15 @@ public class GunScript : MonoBehaviour
 
     void Shoot() // Called from SemiAutoFire(), FullAutoFire() and RepeatFire(). Shoots
     {
-        nextFireTime = Time.fixedTime + delayBetweenShots;
+        // Increment nextFireTime by the fixed interval, ensuring no drift
+        nextFireTime += delayBetweenShots;
+
+        // In case of significant frame delay, ensure we don't fall behind
+        if (Time.time > nextFireTime)
+        {
+            nextFireTime = Time.time + delayBetweenShots;
+        }
+
         // Play "Fire" animation
         anim.Play("Fire", 0, 0.0f);
         playerScript.DoFireAnim(recoilInt);
@@ -377,7 +399,6 @@ public class GunScript : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("Miss");
                     // // Else, chose a random distance.
                     targetPoint = preRay.GetPoint(75);
                 }
@@ -392,7 +413,7 @@ public class GunScript : MonoBehaviour
                     TrailRenderer trail = Instantiate(bulletTrail, attackPoint.position, Quaternion.identity);
                     StartCoroutine(RaycastSpawnTrail(trail, hit.point, hit.normal, true));
                     // Debug
-                    Debug.Log("Hit at" + hit.point);
+                    // Debug.Log("Hit at" + hit.point);
 
                     // If our RayCast hit a rigidbody, add a force
                     hit.rigidbody?.AddForce(ray.direction * hitForce, ForceMode.Impulse);
@@ -541,9 +562,6 @@ public class GunScript : MonoBehaviour
             return (end - start).normalized;
         }
     }
-    #endregion
-
-    
 
     public void PlayAudio1()
     {
@@ -559,4 +577,6 @@ public class GunScript : MonoBehaviour
     {
         audioSource.PlayOneShot(audio3);
     }
+
+    #endregion
 }
