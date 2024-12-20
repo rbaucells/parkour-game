@@ -516,6 +516,7 @@ public class GunScript : MonoBehaviour
             bulletScript.action = 3;
         }
     }
+    
     #endregion
     #region Utilities
 
