@@ -466,14 +466,14 @@ MonoBehaviour:
   bulletType: 1
   impactAction: 0
   magSize: 60
-  fireRateMin: 1199
+  fireRateMin: 1200
   useBulletSpread: 1
   bulletVariance: {x: 0.4, y: 0.4}
   distanceBasedSpread: 1
   distanceDivision: 10
   useBurst: 0
-  numberOfShotsInBurst: 0
-  delayBetweenBursts: 0
+  numberOfShotsInBurst: 3
+  delayBetweenBursts: 1
   numberOfBullets: 1
   hitForce: 15
   trailSpeed: 200

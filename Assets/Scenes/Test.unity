@@ -7596,6 +7596,37 @@ MonoBehaviour:
   moveMultiplier: 2
   gravityMultiplier: 0.25
   wallAngleMinMax: {x: 90, y: 90}
+  wallRunRightTargetAngleY: -5
+  wallRunRightTargetAngleZ: 7
+  wallRunLeftTargetAngleY: 5
+  wallRunLeftTargetAngleZ: -7
+  curWallRunAngleY: 0
+  curWallRunAngleZ: 0
+  wallRunAngleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 2
+      outSlope: 2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  wallRunAngleTime: 0.333
   dashForce: 125
   dashDelay: 3
   dashTime: 0.35
@@ -7605,8 +7636,7 @@ MonoBehaviour:
   spring: 10
   speedText: {fileID: 645401587}
   shootCenter: {fileID: 8289440858660271685}
-  gunInventory:
-  - {fileID: 3356548851287962456, guid: 8aa4c317fe294438d8105b2502a3df1a, type: 3}
+  gunInventory: []
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: cdea3df57c0534f4083ad7b62c2ce30c, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

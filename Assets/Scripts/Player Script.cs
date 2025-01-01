@@ -14,7 +14,7 @@ public class PlayerScript : MonoBehaviour
         Hold,
         Toggle
     };
-
+    
     public enum GroundSlamAction
     {
         Explode,
@@ -101,6 +101,8 @@ public class PlayerScript : MonoBehaviour
     public float maxCrouchDownForce;
 
     public float crouchXMultiplier;
+
+    private IList<Coroutine> crouchingCorutines = new List<Coroutine>();
     //--------------------Ground Slam--------------------//
     [Header("Ground Slam")]
     public GroundSlamAction groundSlamAction;
@@ -140,10 +142,23 @@ public class PlayerScript : MonoBehaviour
     private bool isWallInBack;
 
     private const float wallTolerance = 0.1f; // Tolerance for horizontal proximity to wall
-    private const float wallHeightThreshold = 1.0f; // Height difference to check walls relative to player
 
     private bool wallrunning;
     private ISet<Collider> wallColliders = new HashSet<Collider>();
+
+    public float wallRunRightTargetAngleY;
+    public float wallRunRightTargetAngleZ;
+
+    public float wallRunLeftTargetAngleY;
+    public float wallRunLeftTargetAngleZ;
+    
+    public float curWallRunAngleY;
+    public float curWallRunAngleZ;
+
+    public AnimationCurve wallRunAngleCurve;
+    public float wallRunAngleTime;
+
+    private IList<Coroutine> wallRunCoroutines = new List<Coroutine>();
     //--------------------Dash--------------------//
     [Header("Dash")]
     public float dashForce;
@@ -163,6 +178,8 @@ public class PlayerScript : MonoBehaviour
     public TextMeshProUGUI speedText;
     private CapsuleCollider capsuleCollider;
     private Transform cameraContainer;
+    private Transform weaponsContainer;
+    private new Transform camera;
     private Animator camAnim;
     private Rigidbody rig;
     public Transform shootCenter;
@@ -177,6 +194,7 @@ public class PlayerScript : MonoBehaviour
     //--------------------Effects--------------------//
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;
+
 
     #region Start
 
@@ -213,6 +231,11 @@ public class PlayerScript : MonoBehaviour
         capsuleCollider = GetComponent<CapsuleCollider>();
 
         cameraContainer = GameObject.Find("Camera Container").transform;
+
+        weaponsContainer = GameObject.Find("Weapons Holder").transform;
+
+        camera = GameObject.Find("Camera").transform;
+
         camAnim = cameraContainer.GetComponent<Animator>();
 
         fire = playerInput.actions["Shoot"];
@@ -254,6 +277,7 @@ public class PlayerScript : MonoBehaviour
 
         GroundedDisableSlam();
         UpdateCrouchingThings();
+        UpdateWallRunningThings();
         // Speedometer Text
         speedText.text = "Current Speed: " + Mathf.RoundToInt(new Vector3(currentXSpeed, currentYSpeed, currentZSpeed).magnitude) + "m/s";
     }
@@ -335,9 +359,15 @@ public class PlayerScript : MonoBehaviour
 
     void UpdateCrouchingThings() // Called In Fixed Update(). Sets Values Used In Crouching Coroutines
     {
-        cameraContainer.transform.localPosition = new Vector3(0, curCamHeight, 0);
+        cameraContainer.transform.localPosition = Vector3.up * curCamHeight;
         capsuleCollider.height = curColHeight;
         capsuleCollider.center = Vector3.up * curColCenter;
+    }
+
+    void UpdateWallRunningThings()
+    {
+        weaponsContainer.localEulerAngles = new Vector3(weaponsContainer.eulerAngles.x,curWallRunAngleY,curWallRunAngleZ);
+        camera.localEulerAngles = new(camera.eulerAngles.x,curWallRunAngleY,curWallRunAngleZ);
     }
     
     void Camera() // Called In Late Update(). Rotates Camera and Player as Needed
@@ -592,34 +622,36 @@ public class PlayerScript : MonoBehaviour
             if (isWallOnRight)
             {
                 Debug.Log("Wall Run Right In");
-                camAnim.Play("Wall Run Right In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
+                WallRunRightIn();
             }
             else if (isWallOnLeft)
             {
                 Debug.Log("Wall Run Left In");
-                camAnim.Play("Wall Run Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
+                WallRunLeftIn();
             }
         }
-        else if (!wallGrounded && wasWallGrounded && !grounded)
+        else if (!wallGrounded && wasWallGrounded)
         {   
             if (isWallOnRight)
             {
                 Debug.Log("Wall Run Right Out");
-                camAnim.SetTrigger("wallRunRightOut");
+                WallRunRightOut();
                 isWallOnRight = false;
             }
             else if (isWallOnLeft)
             {
                 Debug.Log("Wall Run Left Out");
-                camAnim.SetTrigger("wallRunLeftOut");
+                WallRunLeftOut();
                 isWallOnLeft = false;
             }
             else if (isWallInFront)
             {
+                Debug.Log("Wall Run Front Out");
                 isWallInFront = false;
             }
             else if (isWallInBack)
             {
+                Debug.Log("Wall Run Back Out");
                 isWallInBack = false;
             }
         }
@@ -692,20 +724,34 @@ public class PlayerScript : MonoBehaviour
 
     private void Crouch() // Called In OnCrouchInput(). Starts A Bunch Of Coroutines to Move the Player
     {
-        StopAllCoroutines();
-        StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, crouchTargetCamHeight, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, crouchTargetColHeight, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, crouchTargetColCenter, crouchCurve, crouchTransitionTime));
+        Debug.Log("Crouch");
+        StopCrouchingCoroutines();
+        crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, crouchTargetCamHeight, crouchCurve, crouchTransitionTime)));
+        crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, crouchTargetColCenter, crouchCurve, crouchTransitionTime)));
+        crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, crouchTargetColHeight, crouchCurve, crouchTransitionTime)));
         crouching = true;
     }
 
     private void UnCrouch() // Called In OnCrouchInput(). Starts A Bunch Of Coroutines to Move the Player
     {
-        StopAllCoroutines();
-        StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, defaultColHeight, crouchCurve, crouchTransitionTime));
-        StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, defaultColCenter, crouchCurve, crouchTransitionTime));
+        Debug.Log("Un-Crouch");
+        StopCrouchingCoroutines();
+        crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime)));
+        crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, defaultColCenter, crouchCurve, crouchTransitionTime)));
+        crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, defaultColHeight, crouchCurve, crouchTransitionTime)));
         crouching = false;
+    }
+
+    void StopCrouchingCoroutines()
+    {
+        Debug.Log("Stop Crouch Routine");
+
+        foreach(var coroutine in crouchingCorutines)
+        {
+            StopCoroutine(coroutine);
+        }
+
+        crouchingCorutines.Clear();
     }
 
     public void DoFireAnim(int size) // Called In GunScript.Shoot(). Plays Screen Shake Animation
@@ -723,6 +769,45 @@ public class PlayerScript : MonoBehaviour
                 camAnim.Play("Big Fire", camAnim.GetLayerIndex("Big Fire"), 0.0f);
                 break;
         }
+    }
+
+    void WallRunRightIn()
+    {
+        StopWallRunCoroutines();
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunRightTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunRightTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+    }
+
+    void WallRunRightOut()
+    {
+        StopWallRunCoroutines();
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+    }
+
+    void WallRunLeftIn()
+    {
+        StopWallRunCoroutines();
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunLeftTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunLeftTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+    }
+
+    void WallRunLeftOut()
+    {
+        StopWallRunCoroutines();
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
+        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+    }
+
+    void StopWallRunCoroutines()
+    {
+        Debug.Log("Stop Wall Run Routines");
+        foreach(var coroutine in wallRunCoroutines)
+        {
+            StopCoroutine(coroutine);
+        }
+
+        wallRunCoroutines.Clear();
     }
 
     #endregion

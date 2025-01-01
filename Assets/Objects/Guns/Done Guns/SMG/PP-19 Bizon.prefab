@@ -570,6 +570,8 @@ MonoBehaviour:
   muzzleParticleSystem: {fileID: 198234346748616026, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
   impactParticleSystem: {fileID: 1874733766879046132, guid: 89c33602d4a554358af318142b4c080f, type: 3}
+  fireAction: {fileID: 1846730345673504035, guid: d96c9f9d792c1fd4c852050183f7e583, type: 3}
+  reloadAction: {fileID: -2622344404044345238, guid: d96c9f9d792c1fd4c852050183f7e583, type: 3}
 --- !u!1 &5802907963038095666
 GameObject:
   m_ObjectHideFlags: 0

@@ -60,7 +60,7 @@ public class GunScript : MonoBehaviour
 
     private float nextFireTime = 0.0f;
 
-    private float lastFireTime = 0.0f;
+    private bool isInFireLoop = false;
     //--------------------Bullet Spread--------------------//
     [Header("Bullet Spread")]
     public bool useBulletSpread;
@@ -150,9 +150,6 @@ public class GunScript : MonoBehaviour
     public InputActionReference fireAction;
     public InputActionReference reloadAction;
 
-    private bool firingActionHeld;
-    private bool reloadActionHeld;
-
     #region Start
 
     void Awake() // Called Before First Frame
@@ -214,19 +211,27 @@ public class GunScript : MonoBehaviour
     }
     #endregion
     #region Update
-
     void Update()
     {
-        if (fireMode == FireMode.Auto && fireAction.action.IsPressed())
+        if (fireAction.action.WasPressedThisFrame() && !reloading)
         {
-            FullAutoFire();
+            if (curMag != 0)
+            {
+                if (fireMode == FireMode.SemiAuto && CanFire())
+                {
+                    SemiAutoFire();
+                }
+                else if (fireMode == FireMode.Auto && CanFire())
+                {
+                    FullAutoFire();
+                }
+            }
+            else
+            {
+                StartCoroutine(WaitForReload());
+            }
         }
-        else if (fireMode == FireMode.SemiAuto && fireAction.action.WasPressedThisFrame())
-        {
-            SemiAutoFire();
-        }
-
-        if (reloadAction.action.WasPressedThisFrame())
+        else if (!isInFireLoop && CanFire() && ReadyToAnim() && reloadAction.action.WasPressedThisFrame())
         {
             Reload();
         }
@@ -290,59 +295,55 @@ public class GunScript : MonoBehaviour
     #endregion
     #region Fire
 
-    public void SemiAutoFire() // Called from PlayerScript.OnFireInput()
+    void SemiAutoFire() // Called from PlayerScript.OnFireInput()
     {
-        if (!useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && CanFire())
+        if (!useBurst)
         {
             Shoot();
-            return;
         }
-
-        if (!curBursting && useBurst && curMag != 0 && fireMode == FireMode.SemiAuto && CanFire())
+        else if (!curBursting && useBurst)
         {
             StartCoroutine(RepeatFire(numberOfShotsInBurst));
-            return;
-        }
-
-        if (curMag == 0)
-        {
-            StartCoroutine(WaitForReload());
         }
     }
 
-    public void FullAutoFire() // Called from PlayerScript.OnFireInput() and PlayerScript.FixedUpdate
+    void FullAutoFire() // Called from PlayerScript.OnFireInput() and PlayerScript.FixedUpdate
     {
-        if (!useBurst && curMag != 0 && CanFire() && ReadyToAnim())
-        {
-            Debug.Log("Time Since Last Shot: ");
-            Shoot();
-            return;
-        }
-
-        if (!curBursting && useBurst && curMag != 0 && CanFire() && ReadyToAnim())
-        {
-            StartCoroutine(RepeatFire(numberOfShotsInBurst));
-            return;
-        }
-
-        if (curMag == 0)
-        {
-            StartCoroutine(WaitForReload());
-        }
+        StartCoroutine(AutoFireLoop());
     }
 
-    bool CanFire()
+    IEnumerator AutoFireLoop()
     {
-        return Time.time >= nextFireTime;
+        isInFireLoop = true;
+
+        while (fireAction.action.IsPressed())
+        {
+            if (curMag != 0)
+            {
+                if (!useBurst)
+                {
+                    Shoot();
+                }
+                else if (!curBursting && useBurst)
+                {
+                    StartCoroutine(RepeatFire(numberOfShotsInBurst));
+                }
+                yield return new WaitUntil(CanFire);
+            }
+            else
+            {
+                yield return new WaitUntil(() => Time.time > nextFireTime);
+                Reload();
+               // StartCoroutine(WaitForReload());
+            }
+        }
+
+        isInFireLoop = false;
     }
 
     IEnumerator WaitForReload()
     {
-        while (Time.time < nextFireTime)
-        {
-            yield return null;
-        }
-
+        yield return new WaitUntil(() => Time.time > nextFireTime);
         Reload();
     }
 
@@ -353,27 +354,17 @@ public class GunScript : MonoBehaviour
         for (int i = 0; i < shotsNumber; i++)
         {
             Shoot();
+
             yield return new WaitForSeconds(delayBetweenShots);
         }
 
-        Invoke(nameof(DelayedBurstingOff), delayBetweenBursts);
-    }
-
-    void DelayedBurstingOff() // Called from RepeatFire(). Doesn't allow Bursting until delay
-    {
+        yield return new WaitForSeconds(delayBetweenBursts - delayBetweenShots);
         curBursting = false;
     }
 
     void Shoot() // Called from SemiAutoFire(), FullAutoFire() and RepeatFire(). Shoots
     {
-        // Increment nextFireTime by the fixed interval, ensuring no drift
-        nextFireTime += delayBetweenShots;
-
-        // In case of significant frame delay, ensure we don't fall behind
-        if (Time.time > nextFireTime)
-        {
-            nextFireTime = Time.time + delayBetweenShots;
-        }
+        nextFireTime = (float)(Time.timeAsDouble + delayBetweenShots);
 
         // Play "Fire" animation
         anim.Play("Fire", 0, 0.0f);
@@ -577,6 +568,11 @@ public class GunScript : MonoBehaviour
     public void PlayAudio3()
     {
         audioSource.PlayOneShot(audio3);
+    }
+
+    bool CanFire()
+    {
+        return (Time.fixedTime >= nextFireTime - Time.deltaTime);
     }
 
     #endregion
