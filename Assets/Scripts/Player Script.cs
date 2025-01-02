@@ -159,6 +159,8 @@ public class PlayerScript : MonoBehaviour
     public float wallRunAngleTime;
 
     private IList<Coroutine> wallRunCoroutines = new List<Coroutine>();
+
+    private Vector3 wallAttractionDireciton;
     //--------------------Dash--------------------//
     [Header("Dash")]
     public float dashForce;
@@ -292,8 +294,8 @@ public class PlayerScript : MonoBehaviour
         if (wallGrounded)
         {
             rig.AddForce(Vector3.down * gravityForce * gravityMultiplier, ForceMode.Acceleration);
-            // Reapply the movement adjustment to handle held keys
-            moveValue = AdjustInputForWallRun(moveValue);
+
+            rig.AddForce(wallAttractionForce * wallAttractionDireciton, ForceMode.Acceleration);
         }
         else
             rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
@@ -309,10 +311,12 @@ public class PlayerScript : MonoBehaviour
         currentXSpeed = rig.velocity.x;
         currentZSpeed = rig.velocity.z;
         // Define player movement
-        Vector3 move = transform.forward * moveValue.y + transform.right * moveValue.x;
+        Vector2 adjustedMoveValue = AdjustInputForWallRun(moveValue);
+        Vector3 move = transform.forward * adjustedMoveValue.y + transform.right * adjustedMoveValue.x;
+        // Multiply Move Acceleration
         // Multiply Move Acceleration
         move *= moveForce;
-        // Add the force
+
         if (wallGrounded)
             rig.AddForce(move * moveMultiplier, ForceMode.Acceleration);
         else if (crouching)
@@ -395,8 +399,7 @@ public class PlayerScript : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Performed)
         {
-            Vector2 inputValue = context.ReadValue<Vector2>();
-            moveValue = AdjustInputForWallRun(inputValue);
+            moveValue = context.ReadValue<Vector2>();
         }
         else if (context.phase == InputActionPhase.Canceled)
         {
@@ -547,6 +550,8 @@ public class PlayerScript : MonoBehaviour
                     wallColliders.Add(other.collider);
                     break;
                 }
+
+                wallAttractionDireciton = -normal.normalized;
             }
         }
         wallGrounded = wallColliders.Any();
@@ -773,30 +778,43 @@ public class PlayerScript : MonoBehaviour
 
     void WallRunRightIn()
     {
-        StopWallRunCoroutines();
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunRightTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunRightTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+        // StopWallRunCoroutines();
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunRightTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunRightTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+        camAnim.Play("Right In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
     }
 
     void WallRunRightOut()
     {
-        StopWallRunCoroutines();
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+        // StopWallRunCoroutines();
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+        camAnim.SetBool("Right Out", true);
+        StartCoroutine(TurnOffWallRunTransitionBool());
     }
 
     void WallRunLeftIn()
     {
-        StopWallRunCoroutines();
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunLeftTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunLeftTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+        // StopWallRunCoroutines();
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunLeftTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunLeftTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+        camAnim.Play("Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
     }
 
     void WallRunLeftOut()
     {
-        StopWallRunCoroutines();
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
-        wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+        // StopWallRunCoroutines();
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
+        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+        camAnim.SetBool("Left Out", true);
+        StartCoroutine(TurnOffWallRunTransitionBool());
+    }
+
+    IEnumerator TurnOffWallRunTransitionBool()
+    {
+        yield return null;
+        camAnim.SetBool("Left Out", false);
+        camAnim.SetBool("Right Out", false);
     }
 
     void StopWallRunCoroutines()

@@ -529,7 +529,7 @@ public class GunScript : MonoBehaviour
 
             // Spread based on distance
             float distance = Vector3.Distance(start, end);
-            float spreadFactor = distance / 5f; // Adjust spread intensity
+            float spreadFactor = distance / distanceDivision; // Adjust spread intensity
 
             if (!distanceBasedSpread)
             {

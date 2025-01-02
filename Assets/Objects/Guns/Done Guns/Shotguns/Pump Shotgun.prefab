@@ -590,7 +590,7 @@ MonoBehaviour:
   fireRateMin: 44
   useBulletSpread: 1
   bulletVariance: {x: 0.6, y: 0.6}
-  distanceBasedSpread: 1
+  distanceBasedSpread: 0
   distanceDivision: 12
   useBurst: 0
   numberOfShotsInBurst: 0

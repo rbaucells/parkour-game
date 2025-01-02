@@ -3672,13 +3672,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 960365403}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.00676784, y: 0.70708025, z: -0.0055109328, w: 0.7070794}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: -10, y: 7.5, z: -40}
   m_LocalScale: {x: 50, y: 15, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 57900413}
-  m_LocalEulerAnglesHint: {x: -0.102, y: 90.001, z: -0.995}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!65 &960365405
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -7592,8 +7592,8 @@ MonoBehaviour:
   groundSlamExplodeUpForce: 200
   groundSlamImplodeRadius: 6
   groundSlamImplodeForce: 20
-  wallAttractionForce: 50
-  moveMultiplier: 2
+  wallAttractionForce: 1000
+  moveMultiplier: 1.8
   gravityMultiplier: 0.25
   wallAngleMinMax: {x: 90, y: 90}
   wallRunRightTargetAngleY: -5
