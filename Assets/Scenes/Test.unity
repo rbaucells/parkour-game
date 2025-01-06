@@ -7636,7 +7636,8 @@ MonoBehaviour:
   spring: 10
   speedText: {fileID: 645401587}
   shootCenter: {fileID: 8289440858660271685}
-  gunInventory: []
+  gunInventory:
+  - {fileID: 7983410646442029578, guid: 4972f492c3e2a4a4381fc49de9b48901, type: 3}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: cdea3df57c0534f4083ad7b62c2ce30c, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

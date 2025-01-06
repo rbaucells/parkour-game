@@ -65,6 +65,7 @@ public class GunScript : MonoBehaviour
     [Header("Bullet Spread")]
     public bool useBulletSpread;
     public Vector2 bulletVariance;
+    public float maxSpreadAngle;
     public bool distanceBasedSpread = true;
     public float distanceDivision = 10f; // Applies more spread if distance larger than distanceDivions, less if distance less than distanceDivision
 
@@ -167,7 +168,7 @@ public class GunScript : MonoBehaviour
         anim = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
 
-        shootCenter = GameObject.Find("Shooter");
+        shootCenter = GameObject.Find("Camera Container");
         delayBetweenShots = 60/fireRateMin;
 
         playerScript = GetComponentInParent<PlayerScript>();
@@ -235,6 +236,12 @@ public class GunScript : MonoBehaviour
         {
             Reload();
         }
+
+        // attackPointPos = attackPoint.position;
+    }
+
+    void LateUpdate() {
+        attackPointPos = attackPoint.position;
     }
 
     #endregion
@@ -362,27 +369,21 @@ public class GunScript : MonoBehaviour
         curBursting = false;
     }
 
+    private Vector3 attackPointPos;
+
     void Shoot() // Called from SemiAutoFire(), FullAutoFire() and RepeatFire(). Shoots
     {
         nextFireTime = (float)(Time.timeAsDouble + delayBetweenShots);
-
-        // Play "Fire" animation
-        anim.Play("Fire", 0, 0.0f);
-        playerScript.DoFireAnim(recoilInt);
-        // Play the audio fireAudio
-        audioSource.PlayOneShot(fireAudio);
-        // Particle for Muzzle Flash
-        ParticleSystem muzzleParticle = Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity);
-        muzzleParticle.gameObject.transform.parent = transform.GetChild(0);
         curMag -= 1;
         for (int i = 0; i < numberOfBullets; i++)
         {
             if (bulletType == BulletType.Raycast)
             {
-                Vector3 targetPoint = Vector3.zero;
-
-                Ray preRay = new(shootCenter.transform.position, shootCenter.transform.TransformDirection(Vector3.forward));
-
+                Vector3 targetPoint;
+    
+                Ray preRay = new(shootCenter.transform.position, shootCenter.transform.forward);
+                Debug.DrawRay(shootCenter.transform.position, shootCenter.transform.forward, Color.red, 5);
+    
                 if (Physics.Raycast(preRay, out RaycastHit preHit, Mathf.Infinity, layerMask))
                 {
                     // If it hits, our target position is at hit.point
@@ -390,36 +391,30 @@ public class GunScript : MonoBehaviour
                 }
                 else
                 {
-                    // // Else, chose a random distance.
+                    // Else, chose a random distance.
                     targetPoint = preRay.GetPoint(75);
+                    return;
                 }
 
-                Vector3 rayDirection = GetDirection(attackPoint.position, targetPoint);
+                Vector3 rayDirection = GetDirection(attackPointPos, targetPoint);
+
                 // Define the ray
-                Ray ray = new(attackPoint.position, rayDirection);
-                // Create the ray
+                var ray = new Ray(attackPointPos, rayDirection);
+    
+                Debug.DrawRay(attackPointPos, rayDirection, Color.blue, 5);
+    
                 if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
                 {
-                    // Do Trail stuff
-                    TrailRenderer trail = Instantiate(bulletTrail, attackPoint.position, Quaternion.identity);
-                    StartCoroutine(RaycastSpawnTrail(trail, hit.point, hit.normal, true));
-                    // Debug
-                    // Debug.Log("Hit at" + hit.point);
-
+                    StartCoroutine(RaycastSpawnTrail(attackPointPos, targetPoint, hit.normal, true));
                     // If our RayCast hit a rigidbody, add a force
                     hit.rigidbody?.AddForce(ray.direction * hitForce, ForceMode.Impulse);
                 }
                 else
                 {
-                    // You have bad aim
-                    Debug.Log("Miss");
-
-                    TrailRenderer trail = Instantiate(bulletTrail, attackPoint.position, Quaternion.identity);
-
-                    StartCoroutine(RaycastSpawnTrail(trail, targetPoint, Vector3.zero, false));
+                    StartCoroutine(RaycastSpawnTrail(attackPointPos, targetPoint, Vector3.zero, false));
                 }
             }
-            if (bulletType == BulletType.Projectile)
+            else if (bulletType == BulletType.Projectile)
             {
                 // Where the crosshair is "looking"
                 Vector3 targetPoint = Vector3.zero;
@@ -445,27 +440,35 @@ public class GunScript : MonoBehaviour
         }
         if (usePositionalRecoil)
             playerRig.AddForce(-shootCenter.transform.forward * positionalRecoilForce, ForceMode.Impulse);
+        // Play "Fire" animation
+        anim.Play("Fire", 0, 0.0f);
+        playerScript.DoFireAnim(recoilInt);
+        // Play the audio fireAudio
+        audioSource.PlayOneShot(fireAudio);
+        // Particle for Muzzle Flash
+        ParticleSystem muzzleParticle = Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity);
+        muzzleParticle.gameObject.transform.parent = transform.GetChild(0);
     }
 
-    private IEnumerator RaycastSpawnTrail(TrailRenderer Trail, Vector3 HitPoint, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path
+    private IEnumerator RaycastSpawnTrail(Vector3 start, Vector3 end, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path
     {
-        Vector3 startPosition = Trail.transform.position;
-        float distance = Vector3.Distance(Trail.transform.position, HitPoint);
+        TrailRenderer Trail = Instantiate(bulletTrail, start, Quaternion.identity);
+        float distance = Vector3.Distance(start, end);
         float remainingDistance = distance;
 
         while (remainingDistance > 0)
         {
-            Trail.transform.position = Vector3.Lerp(startPosition, HitPoint, 1 - (remainingDistance / distance));
+            Trail.transform.position = Vector3.Lerp(start, end, 1 - (remainingDistance / distance));
 
             remainingDistance -= trailSpeed * Time.deltaTime;
 
             yield return null;
         }
-        Trail.transform.position = HitPoint;
+        Trail.transform.position = end;
 
         if (MadeImpact)
         {
-            Instantiate(impactParticleSystem, HitPoint, Quaternion.LookRotation(HitNormal));
+            Instantiate(impactParticleSystem, end, Quaternion.LookRotation(HitNormal));
         }
 
         Destroy(Trail.gameObject, Trail.time);
@@ -520,34 +523,9 @@ public class GunScript : MonoBehaviour
     {
         if (useBulletSpread)
         {
-            // Base direction from start to end
             Vector3 direction = (end - start).normalized;
-
-            // Calculate right and up vectors based on the direction
-            Vector3 right = Vector3.Cross(Vector3.up, direction).normalized; // Right vector
-            Vector3 up = Vector3.Cross(direction, right).normalized; // Up vector
-
-            // Spread based on distance
-            float distance = Vector3.Distance(start, end);
-            float spreadFactor = distance / distanceDivision; // Adjust spread intensity
-
-            if (!distanceBasedSpread)
-            {
-                spreadFactor = 1;
-            }
-
-            // Apply random spread for horizontal (right) and vertical (up)
-            float horizontalSpread = UnityEngine.Random.Range(-bulletVariance.x, bulletVariance.x) * spreadFactor;
-            float verticalSpread = UnityEngine.Random.Range(-bulletVariance.y, bulletVariance.y) * spreadFactor;
-
-            // Adjust the target position (end) with spread
-            Vector3 spread = (horizontalSpread * right + verticalSpread * up);
-
-            // Apply the spread to the target point (end)
-            Vector3 adjustedEnd = end + spread;
-
-            // Return the direction from start to the new, spread-adjusted end position
-            return (adjustedEnd - start).normalized;
+            // Multiply direction by random rotation on attackpoint axis
+            return direction;
         }
         else
         {
@@ -575,5 +553,10 @@ public class GunScript : MonoBehaviour
         return (Time.fixedTime >= nextFireTime - Time.deltaTime);
     }
 
+    void OnDrawGizmos() {
+        Gizmos.color = Color.red;
+        Gizmos.DrawCube(attackPoint.position, new Vector3(0.1f, 0.1f, 0.1f));
+        // attackPointPos = attackPoint.position;
+    }
     #endregion
 }

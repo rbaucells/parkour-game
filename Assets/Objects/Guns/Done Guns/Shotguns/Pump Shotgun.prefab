@@ -588,14 +588,15 @@ MonoBehaviour:
   impactAction: 0
   magSize: 5
   fireRateMin: 44
-  useBulletSpread: 1
+  useBulletSpread: 0
   bulletVariance: {x: 0.6, y: 0.6}
+  maxSpreadAngle: 0
   distanceBasedSpread: 0
   distanceDivision: 12
   useBurst: 0
   numberOfShotsInBurst: 0
   delayBetweenBursts: 0
-  numberOfBullets: 8
+  numberOfBullets: 1
   hitForce: 9
   trailSpeed: 269
   bulletSpeed: 0
@@ -607,11 +608,11 @@ MonoBehaviour:
   actionForce: 0
   explosionUpForce: 0
   recoilSize: 2
-  usePositionalRecoil: 1
+  usePositionalRecoil: 0
   positionalRecoilForce: 40
   layerMask:
     serializedVersion: 2
-    m_Bits: 119
+    m_Bits: 311
   attackPoint: {fileID: 1519530855191137191}
   weaponPos:
   - {x: 1.1, y: -0.5, z: 0.83}
