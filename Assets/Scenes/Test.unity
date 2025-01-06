@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657868, g: 0.49641263, b: 0.5748171, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657826, g: 0.49641263, b: 0.57481676, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -7079,22 +7079,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!1 &2333291726892573271
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8289440858660271685}
-  m_Layer: 3
-  m_Name: Shooter
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
 --- !u!95 &2985901841639486075
 Animator:
   serializedVersion: 7
@@ -7423,8 +7407,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8289440858660271685}
+  m_Children: []
   m_Father: {fileID: 891919486772408319}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &7969007692901562856
@@ -7457,21 +7440,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 286493262725548935}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &8289440858660271685
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2333291726892573271}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7614412181197530792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &8303896721008749587
 Camera:
@@ -7547,6 +7515,7 @@ MonoBehaviour:
   jumpForce: 45
   gravityForce: 55
   maxAirJumps: 1
+  cayoteTime: 0.1
   crouchType: 0
   crouchTransitionTime: 0.2
   curCamHeight: 0
@@ -7635,9 +7604,9 @@ MonoBehaviour:
   damper: 0.2
   spring: 10
   speedText: {fileID: 645401587}
-  shootCenter: {fileID: 8289440858660271685}
+  shootCenter: {fileID: 0}
   gunInventory:
-  - {fileID: 7983410646442029578, guid: 4972f492c3e2a4a4381fc49de9b48901, type: 3}
+  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: cdea3df57c0534f4083ad7b62c2ce30c, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

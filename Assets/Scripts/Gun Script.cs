@@ -65,9 +65,6 @@ public class GunScript : MonoBehaviour
     [Header("Bullet Spread")]
     public bool useBulletSpread;
     public Vector2 bulletVariance;
-    public float maxSpreadAngle;
-    public bool distanceBasedSpread = true;
-    public float distanceDivision = 10f; // Applies more spread if distance larger than distanceDivions, less if distance less than distanceDivision
 
     //--------------------Burst Fire--------------------//
     [Header("Burst Fire")]
@@ -377,31 +374,34 @@ public class GunScript : MonoBehaviour
         curMag -= 1;
         for (int i = 0; i < numberOfBullets; i++)
         {
+            Vector3 preRayDirection = preRayGenerator(shootCenter.transform.forward);
+            Vector3 preRayOrigin = shootCenter.transform.position;
+
+            Vector3 targetPoint;
+
+            Ray preRay = new(preRayOrigin, preRayDirection);
+            
+            Debug.DrawRay(preRayOrigin, preRayDirection, Color.red, 5);
+
+            if (Physics.Raycast(preRay, out RaycastHit preHit, Mathf.Infinity, layerMask))
+            {
+                // If it hits, our target position is at hit.point
+                targetPoint = preHit.point;
+            }
+            else
+            {
+                // Else, chose a random distance.
+                targetPoint = preRay.GetPoint(75);
+            }
+
+            Vector3 bulletDirection = (targetPoint - attackPointPos).normalized;
+
             if (bulletType == BulletType.Raycast)
             {
-                Vector3 targetPoint;
-    
-                Ray preRay = new(shootCenter.transform.position, shootCenter.transform.forward);
-                Debug.DrawRay(shootCenter.transform.position, shootCenter.transform.forward, Color.red, 5);
-    
-                if (Physics.Raycast(preRay, out RaycastHit preHit, Mathf.Infinity, layerMask))
-                {
-                    // If it hits, our target position is at hit.point
-                    targetPoint = preHit.point;
-                }
-                else
-                {
-                    // Else, chose a random distance.
-                    targetPoint = preRay.GetPoint(75);
-                    return;
-                }
-
-                Vector3 rayDirection = GetDirection(attackPointPos, targetPoint);
-
                 // Define the ray
-                var ray = new Ray(attackPointPos, rayDirection);
+                var ray = new Ray(attackPointPos, bulletDirection);
     
-                Debug.DrawRay(attackPointPos, rayDirection, Color.blue, 5);
+                Debug.DrawRay(attackPointPos, bulletDirection, Color.blue, 5);
     
                 if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
                 {
@@ -413,31 +413,16 @@ public class GunScript : MonoBehaviour
                 {
                     StartCoroutine(RaycastSpawnTrail(attackPointPos, targetPoint, Vector3.zero, false));
                 }
+                Debug.Log("Shot With RayCast");
             }
             else if (bulletType == BulletType.Projectile)
             {
-                // Where the crosshair is "looking"
-                Vector3 targetPoint = Vector3.zero;
-                // Define the Ray
-                Ray ray = new(shootCenter.transform.position, shootCenter.transform.TransformDirection(Vector3.forward));
-                // Create the Ray to see if we will hit something
-                if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
-                {
-                    // If it hits, our target position is at hit.point
-                    targetPoint = hit.point;
-                }
-                else
-                {
-                    Debug.Log("Miss");
-                    // // Else, chose a random distance.
-                    targetPoint = ray.GetPoint(75);
-                }
-                // Define bullet direction based on direction from attackPoint to targetPoint and with useBulletSpread
-                Vector3 direction = GetDirection(attackPoint.position, targetPoint);
                 // Do the Visual bullet passing the direciton
-                VisualBullet(direction);
+                VisualBullet(bulletDirection);
+                Debug.Log("Shot With Projectile");
             }
         }
+
         if (usePositionalRecoil)
             playerRig.AddForce(-shootCenter.transform.forward * positionalRecoilForce, ForceMode.Impulse);
         // Play "Fire" animation
@@ -480,8 +465,8 @@ public class GunScript : MonoBehaviour
         GameObject curBullet = Instantiate(bulletModel, Vector3.zero, Quaternion.identity);
         // Create the BulletTrail and attach it to curBullet
         Instantiate(bulletTrail, Vector3.zero, Quaternion.identity, curBullet.transform);
-        // Set Pos and Rot
-        curBullet.transform.position = attackPoint.position;
+        // Set Pos
+        curBullet.transform.position = attackPointPos;
         // Rotate bullet to point at crosshair
         curBullet.transform.forward = direction;
         // Access the Rigidbody
@@ -519,18 +504,17 @@ public class GunScript : MonoBehaviour
         return anim.GetCurrentAnimatorStateInfo(0).normalizedTime > 1 && !anim.IsInTransition(0);
     }
 
-    Vector3 GetDirection(Vector3 start, Vector3 end) // Gives direction using Spread and distanceBasedSpread
+    Vector3 preRayGenerator(Vector3 originDirection)
     {
+        Vector3 direction = originDirection.normalized;
+
         if (useBulletSpread)
         {
-            Vector3 direction = (end - start).normalized;
-            // Multiply direction by random rotation on attackpoint axis
-            return direction;
+            direction = Quaternion.AngleAxis(UnityEngine.Random.Range(-bulletVariance.x, bulletVariance.x), shootCenter.transform.up) * direction;
+            direction = Quaternion.AngleAxis(UnityEngine.Random.Range(-bulletVariance.y, bulletVariance.y), shootCenter.transform.right) * direction;
         }
-        else
-        {
-            return (end - start).normalized;
-        }
+
+        return direction;
     }
 
     public void PlayAudio1()

@@ -69,6 +69,8 @@ public class PlayerScript : MonoBehaviour
     public int maxAirJumps;
     private int remainingAirJumps;
 
+    public float cayoteTime;
+
     //--------------------Crouching--------------------//
     [Header("Crouching")]
     public CrouchType crouchType;
@@ -319,12 +321,8 @@ public class PlayerScript : MonoBehaviour
 
         if (wallGrounded)
             rig.AddForce(move * moveMultiplier, ForceMode.Acceleration);
-        else if (crouching)
-        {
-            rig.AddForce(new Vector3(move.x * crouchXMultiplier, 0, move.z), ForceMode.Acceleration);   
-        } 
-        else
-            rig.AddForce(move, ForceMode.Acceleration); 
+
+        rig.AddForce(move, ForceMode.Acceleration); 
     }
 
     void ResetAirJumps() // Called In Fixed Update(). To Reset AirJumps when Grounded
@@ -493,6 +491,13 @@ public class PlayerScript : MonoBehaviour
         WallRunningAnims();
     }
 
+    void OnCollisionStay(Collision other)
+    {
+        CheckIfWallGrounded(other);
+
+        WallRunningAnims();
+    }
+
     void CheckIfGrounded(Collision other) // Called In OnCollisionEnter(). Checks If Any Collision Points at FeetYLevel
     {
         var contactPoints = new ContactPoint[other.contactCount];
@@ -511,12 +516,15 @@ public class PlayerScript : MonoBehaviour
 
     void CheckIfWallGrounded(Collision other) // Called In OnCollisionEnter(). Checks If Wall Angle is Good. Then Checks Which Side Collision Occured
     {
+        if (grounded || crouching)
+            return;
         var contactPoints = new ContactPoint[other.contactCount];
         other.GetContacts(contactPoints);
 
         foreach (ContactPoint contactPoint in contactPoints)
         {
             float groundAngle = Vector3.Angle(contactPoint.normal, Vector3.up);
+            
             if (groundAngle >= wallAngleMinMax.x && groundAngle <= wallAngleMinMax.y)
             {
                 Vector3 normal = contactPoint.normal;
@@ -622,7 +630,7 @@ public class PlayerScript : MonoBehaviour
 
     void WallRunningAnims() // Called In OnCollisionEnter() and OnCollisionExit(). If Not WallGrounded Before, But WallGrounded now. Play Anim. Vice Versa
     {
-        if (wallGrounded && !wasWallGrounded && !grounded)
+        if (wallGrounded && !wasWallGrounded && !grounded && !crouching)
         {
             if (isWallOnRight)
             {
@@ -709,9 +717,14 @@ public class PlayerScript : MonoBehaviour
 
         // Check if Still WallGrounded
         wallColliders.Remove(other.collider);
-        wallGrounded = wallColliders.Any();
+        Invoke(nameof(ReCheckWallGrounded), cayoteTime);
 
         WallRunningAnims();
+    }
+
+    void ReCheckWallGrounded()
+    {
+        wallGrounded = wallColliders.Any();
     }
 
     #endregion
@@ -720,9 +733,27 @@ public class PlayerScript : MonoBehaviour
 
     private IEnumerator Dash() // Called In OnDashInput(). Adds Force, Waits dashTime. Then Resets player velocity to starting velocity * leaveVelocityMultiplier
     {
-        Vector3 startVelocity = new Vector3(currentXSpeed, 0, currentZSpeed);
-        rig.AddForce(cameraContainer.forward * dashForce, ForceMode.Impulse);
-        camAnim.Play("Dash", camAnim.GetLayerIndex("Dash Layer"), 0.0f);
+        Vector3 startVelocity = new(currentXSpeed, 0, currentZSpeed);
+        Vector3 currentMoveValue = new(moveValue.normalized.x, 0, moveValue.normalized.y);
+        rig.AddRelativeForce(currentMoveValue* dashForce, ForceMode.Impulse);
+
+        if (currentMoveValue.x > 0.2f)
+        {
+            camAnim.Play("Dash Right", camAnim.GetLayerIndex("Dash X Layer"), 0.0f); 
+        }
+        else if (currentMoveValue.x < -0.2f)
+        {
+            camAnim.Play("Dash Left", camAnim.GetLayerIndex("Dash X Layer"), 0.0f); 
+        }
+
+        if (currentMoveValue.z > 0.2f)
+        {
+            camAnim.Play("Dash Forward", camAnim.GetLayerIndex("Dash Z Layer"), 0.0f); 
+        }
+        else if (currentMoveValue.z < -0.2f)
+        {
+            camAnim.Play("Dash Back", camAnim.GetLayerIndex("Dash Z Layer"), 0.0f); 
+        }
         yield return new WaitForSeconds(dashTime);
         rig.velocity = startVelocity * leaveVelocityMultiplier;
     }

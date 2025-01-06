@@ -451,9 +451,7 @@ MonoBehaviour:
   magSize: 2
   fireRateMin: 143
   useBulletSpread: 1
-  bulletVariance: {x: 0.5, y: 0.5}
-  distanceBasedSpread: 1
-  distanceDivision: 5
+  bulletVariance: {x: 8, y: 8}
   useBurst: 0
   numberOfShotsInBurst: 0
   delayBetweenBursts: 0
@@ -470,7 +468,7 @@ MonoBehaviour:
   explosionUpForce: 0
   recoilSize: 2
   usePositionalRecoil: 1
-  positionalRecoilForce: 35
+  positionalRecoilForce: 125
   layerMask:
     serializedVersion: 2
     m_Bits: 119

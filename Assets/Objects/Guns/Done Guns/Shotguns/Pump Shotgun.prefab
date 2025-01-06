@@ -509,7 +509,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 0.173
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -584,31 +584,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fireMode: 0
-  bulletType: 1
+  bulletType: 0
   impactAction: 0
   magSize: 5
   fireRateMin: 44
-  useBulletSpread: 0
-  bulletVariance: {x: 0.6, y: 0.6}
-  maxSpreadAngle: 0
-  distanceBasedSpread: 0
-  distanceDivision: 12
+  useBulletSpread: 1
+  bulletVariance: {x: 6, y: 6}
   useBurst: 0
   numberOfShotsInBurst: 0
   delayBetweenBursts: 0
-  numberOfBullets: 1
+  numberOfBullets: 8
   hitForce: 9
   trailSpeed: 269
-  bulletSpeed: 0
+  bulletSpeed: 250
   bulletGravity: 9.8
-  bulletModel: {fileID: 0}
+  bulletModel: {fileID: 4850878553985668912, guid: fe26a30f5631303489d684f939a17752, type: 3}
   multipleReloadAnim: 1
   damage: 0
   actionRadius: 0
   actionForce: 0
   explosionUpForce: 0
   recoilSize: 2
-  usePositionalRecoil: 0
+  usePositionalRecoil: 1
   positionalRecoilForce: 40
   layerMask:
     serializedVersion: 2
