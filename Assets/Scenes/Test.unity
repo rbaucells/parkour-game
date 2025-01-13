@@ -2703,7 +2703,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 639124717}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -3686,7 +3686,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 960365403}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -4465,7 +4465,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1282764959}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -4736,7 +4736,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1415609599}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -4874,7 +4874,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1473628701}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -5313,7 +5313,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1639447083}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -5656,7 +5656,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1720717992}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -6134,7 +6134,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1840743495}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -7046,7 +7046,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3847371285132970422}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0bbabc84a6399540a8159c4e9d46fce, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -7515,7 +7515,7 @@ MonoBehaviour:
   jumpForce: 45
   gravityForce: 55
   maxAirJumps: 1
-  cayoteTime: 0.1
+  cayoteTime: 0.5
   crouchType: 0
   crouchTransitionTime: 0.2
   curCamHeight: 0
@@ -7561,40 +7561,10 @@ MonoBehaviour:
   groundSlamExplodeUpForce: 200
   groundSlamImplodeRadius: 6
   groundSlamImplodeForce: 20
-  wallAttractionForce: 1000
-  moveMultiplier: 1.8
-  gravityMultiplier: 0.25
-  wallAngleMinMax: {x: 90, y: 90}
-  wallRunRightTargetAngleY: -5
-  wallRunRightTargetAngleZ: 7
-  wallRunLeftTargetAngleY: 5
-  wallRunLeftTargetAngleZ: -7
-  curWallRunAngleY: 0
-  curWallRunAngleZ: 0
-  wallRunAngleCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
+  wallAttractionForce: 500
+  moveMultiplier: 0.65
+  gravityMultiplier: 0.15
+  wallAngleMinMax: {x: 85, y: 95}
   wallRunAngleTime: 0.333
   dashForce: 125
   dashDelay: 3
@@ -7605,6 +7575,7 @@ MonoBehaviour:
   spring: 10
   speedText: {fileID: 645401587}
   shootCenter: {fileID: 0}
+  noFrictionMat: {fileID: 0}
   gunInventory:
   - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: cdea3df57c0534f4083ad7b62c2ce30c, type: 3}

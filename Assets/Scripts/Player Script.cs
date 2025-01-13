@@ -6,6 +6,9 @@ using TMPro;
 using System.Linq;
 using UnityEditor.EditorTools;
 using System;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
+using System.Data.Common;
 
 public class PlayerScript : MonoBehaviour
 {
@@ -19,6 +22,15 @@ public class PlayerScript : MonoBehaviour
     {
         Explode,
         Implode
+    };
+
+    public enum WallSide
+    {
+        Front,
+        Back,
+        Right,
+        Left,
+        None
     };
 
     //--------------------Camera--------------------//
@@ -69,13 +81,14 @@ public class PlayerScript : MonoBehaviour
     public int maxAirJumps;
     private int remainingAirJumps;
 
-    public float cayoteTime;
+    public float cayoteTime = 1;
 
+    private float defaultCayoteTime;
     //--------------------Crouching--------------------//
     [Header("Crouching")]
     public CrouchType crouchType;
 
-    private bool crouching;
+    private bool isCrouching;
     public float crouchTransitionTime;
 
     private float defaultCamHeight;
@@ -138,26 +151,11 @@ public class PlayerScript : MonoBehaviour
     private bool wallGrounded = false;
     private bool wasWallGrounded;
 
-    private bool isWallOnRight;
-    private bool isWallOnLeft;
-    private bool isWallInFront;
-    private bool isWallInBack;
-
     private const float wallTolerance = 0.1f; // Tolerance for horizontal proximity to wall
 
     private bool wallrunning;
     private ISet<Collider> wallColliders = new HashSet<Collider>();
 
-    public float wallRunRightTargetAngleY;
-    public float wallRunRightTargetAngleZ;
-
-    public float wallRunLeftTargetAngleY;
-    public float wallRunLeftTargetAngleZ;
-    
-    public float curWallRunAngleY;
-    public float curWallRunAngleZ;
-
-    public AnimationCurve wallRunAngleCurve;
     public float wallRunAngleTime;
 
     private IList<Coroutine> wallRunCoroutines = new List<Coroutine>();
@@ -187,6 +185,8 @@ public class PlayerScript : MonoBehaviour
     private Animator camAnim;
     private Rigidbody rig;
     public Transform shootCenter;
+    public PhysicMaterial noFrictionMat;
+    private PhysicMaterial curPhyMat;
 
     //--------------------Weapons--------------------//
     [Header("Weapons")]
@@ -199,7 +199,11 @@ public class PlayerScript : MonoBehaviour
     [Header("Effects")]
     public GameObject groundSlamParticleSystem;
 
+    private Collision lastCollision;
 
+    private WallSide wallSide = WallSide.None;
+
+    private float lastGroundedTime;
     #region Start
 
     void Awake() // Called Before First Frame
@@ -243,6 +247,8 @@ public class PlayerScript : MonoBehaviour
         camAnim = cameraContainer.GetComponent<Animator>();
 
         fire = playerInput.actions["Shoot"];
+
+        curPhyMat = gameObject.GetComponent<Collider>().material;
     }
 
     void SetDefaults() // Called In Awake(). To Define Default Values
@@ -258,6 +264,8 @@ public class PlayerScript : MonoBehaviour
         defaultMoveForce = moveForce;
         defaultCrouchDownForce = crouchDownForce;
         defaultGroundSlamUpForce = groundSlamUpForce;
+
+        defaultCayoteTime = cayoteTime;
     }
 
     void CheckIfInputChange() // First Called In Start(). Called Every 3 Seconds. To Check Which Input Is Being Used
@@ -281,7 +289,6 @@ public class PlayerScript : MonoBehaviour
 
         GroundedDisableSlam();
         UpdateCrouchingThings();
-        UpdateWallRunningThings();
         // Speedometer Text
         speedText.text = "Current Speed: " + Mathf.RoundToInt(new Vector3(currentXSpeed, currentYSpeed, currentZSpeed).magnitude) + "m/s";
     }
@@ -301,7 +308,7 @@ public class PlayerScript : MonoBehaviour
         }
         else
             rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
-        if (crouching && !grounded || crouching && !wallGrounded)
+        if (isCrouching && !grounded || isCrouching && !wallGrounded)
         {
             rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
         }
@@ -318,9 +325,6 @@ public class PlayerScript : MonoBehaviour
         // Multiply Move Acceleration
         // Multiply Move Acceleration
         move *= moveForce;
-
-        if (wallGrounded)
-            rig.AddForce(move * moveMultiplier, ForceMode.Acceleration);
 
         rig.AddForce(move, ForceMode.Acceleration); 
     }
@@ -364,12 +368,6 @@ public class PlayerScript : MonoBehaviour
         cameraContainer.transform.localPosition = Vector3.up * curCamHeight;
         capsuleCollider.height = curColHeight;
         capsuleCollider.center = Vector3.up * curColCenter;
-    }
-
-    void UpdateWallRunningThings()
-    {
-        weaponsContainer.localEulerAngles = new Vector3(weaponsContainer.eulerAngles.x,curWallRunAngleY,curWallRunAngleZ);
-        camera.localEulerAngles = new(camera.eulerAngles.x,curWallRunAngleY,curWallRunAngleZ);
     }
     
     void Camera() // Called In Late Update(). Rotates Camera and Player as Needed
@@ -419,7 +417,7 @@ public class PlayerScript : MonoBehaviour
 
     public void OnCrouchInput(InputAction.CallbackContext context)
     {
-        // If we crouch on this frame, crouching true. 
+        // If we crouch on this frame, isCrouching true. 
         if (context.phase == InputActionPhase.Performed)
         {
             if (!grounded) 
@@ -431,7 +429,7 @@ public class PlayerScript : MonoBehaviour
             }
             else
             {
-                if (!crouching)
+                if (!isCrouching)
                 {
                     Crouch();
                 }
@@ -482,19 +480,24 @@ public class PlayerScript : MonoBehaviour
     {
         // Ground Checks
         CheckIfGrounded(other);
-        CheckIfWallGrounded(other);
+
+        CheckWallSide(other);
 
         HoldingJumpButton();
 
         // Effects
-        LandingAndGroundSlam(other);
+        LandingAnimations(other);
         WallRunningAnims();
+
+        lastCollision = other;
+
+        cayoteTime = defaultCayoteTime;
     }
 
     void OnCollisionStay(Collision other)
     {
-        CheckIfWallGrounded(other);
-
+        //CheckIfGrounded(other);
+        CheckWallSide(other);
         WallRunningAnims();
     }
 
@@ -514,19 +517,20 @@ public class PlayerScript : MonoBehaviour
         grounded = groundColiders.Any();
     }
 
-    void CheckIfWallGrounded(Collision other) // Called In OnCollisionEnter(). Checks If Wall Angle is Good. Then Checks Which Side Collision Occured
+    void CheckWallSide(Collision other)
     {
-        if (grounded || crouching)
+        Debug.Log("Entered CheckWallSide()");
+        if (grounded || isCrouching)
             return;
         var contactPoints = new ContactPoint[other.contactCount];
         other.GetContacts(contactPoints);
-
         foreach (ContactPoint contactPoint in contactPoints)
         {
             float groundAngle = Vector3.Angle(contactPoint.normal, Vector3.up);
             
             if (groundAngle >= wallAngleMinMax.x && groundAngle <= wallAngleMinMax.y)
             {
+                // Find direction of wall by finding position relative to the player from transform.position to contactPoint.point by subtracting positions. Then when on wall side, lock player to the wall until click jump or click opposing button
                 Vector3 normal = contactPoint.normal;
 
                 float dotForward = Vector3.Dot(normal, transform.forward);
@@ -536,32 +540,40 @@ public class PlayerScript : MonoBehaviour
 
                 if (dotForward > 0.5f)
                 {
-                    isWallInBack = true;
+                    Debug.Log("Wall is on Back");
                     wallColliders.Add(other.collider);
-                    break;
+                    wallAttractionDireciton = -normal.normalized;
+                    wallSide = WallSide.Back;
                 }
                 else if (dotRight > 0.5f)
                 {
-                    isWallOnLeft = true;
+                    Debug.Log("Wall is on Left");
                     wallColliders.Add(other.collider);
-                    break;
+                    wallAttractionDireciton = -normal.normalized;
+                    wallSide = WallSide.Left;
                 }
                 else if (dotBack > 0.5f)
                 {
-                    isWallInFront = true;
+                    Debug.Log("Wall is on Front");
                     wallColliders.Add(other.collider);
-                    break;
+                    wallAttractionDireciton = -normal.normalized;
+                    wallSide = WallSide.Front;
                 }
                 else if (dotLeft > 0.5f)
                 {
-                    isWallOnRight = true;
+                    Debug.Log("Wall is on Right");
                     wallColliders.Add(other.collider);
-                    break;
+                    wallAttractionDireciton = -normal.normalized;
+                    wallSide = WallSide.Right;
                 }
-
-                wallAttractionDireciton = -normal.normalized;
+                else
+                {
+                    Debug.Log("Wall is on None");
+                    wallSide = WallSide.None;
+                }
             }
         }
+        Debug.Log("Checking if WallGrounded");
         wallGrounded = wallColliders.Any();
     }
 
@@ -573,13 +585,13 @@ public class PlayerScript : MonoBehaviour
         }
     }
         
-    void LandingAndGroundSlam(Collision other) // Called In OnCollisionEnter(). If Not Grounded Before, But Grounded Now. Play Animations and GroundSlam
+    void LandingAnimations(Collision other) // Called In OnCollisionEnter(). If Not Grounded Before, But Grounded Now. Play Animations and GroundSlam
     {
         if (grounded && !wasGrounded) // Grounded now but not last frame
         {
             camAnim.Play("Land", camAnim.GetLayerIndex("Land Layer"), 0.0f);
 
-            if (crouching && allowGroundSlam)
+            if (isCrouching && allowGroundSlam)
             {
                 Instantiate(groundSlamParticleSystem, other.GetContact(0).point, Quaternion.identity);
 
@@ -630,42 +642,31 @@ public class PlayerScript : MonoBehaviour
 
     void WallRunningAnims() // Called In OnCollisionEnter() and OnCollisionExit(). If Not WallGrounded Before, But WallGrounded now. Play Anim. Vice Versa
     {
-        if (wallGrounded && !wasWallGrounded && !grounded && !crouching)
+        if (wallGrounded && !wasWallGrounded)
         {
-            if (isWallOnRight)
+            switch (wallSide)
             {
-                Debug.Log("Wall Run Right In");
+                case WallSide.Right:
                 WallRunRightIn();
-            }
-            else if (isWallOnLeft)
-            {
-                Debug.Log("Wall Run Left In");
+                break;
+
+                case WallSide.Left:
                 WallRunLeftIn();
+                break;
             }
         }
+
         else if (!wallGrounded && wasWallGrounded)
-        {   
-            if (isWallOnRight)
+        {
+            switch (wallSide)
             {
-                Debug.Log("Wall Run Right Out");
+                case WallSide.Right:
                 WallRunRightOut();
-                isWallOnRight = false;
-            }
-            else if (isWallOnLeft)
-            {
-                Debug.Log("Wall Run Left Out");
+                break;
+
+                case WallSide.Left:
                 WallRunLeftOut();
-                isWallOnLeft = false;
-            }
-            else if (isWallInFront)
-            {
-                Debug.Log("Wall Run Front Out");
-                isWallInFront = false;
-            }
-            else if (isWallInBack)
-            {
-                Debug.Log("Wall Run Back Out");
-                isWallInBack = false;
+                break;
             }
         }
         wasWallGrounded = wallGrounded;
@@ -673,29 +674,37 @@ public class PlayerScript : MonoBehaviour
 
     void Jump() // Called in OnJumpInput() On First Frame. Determines Direction to Jump In
     {
-        if (grounded || (wallGrounded && !(isWallInFront || isWallInBack || isWallOnRight || isWallOnLeft)))
+        bool haveCayoteTimeLeft = Time.time <= lastGroundedTime + cayoteTime;
+
+        if ((grounded || haveCayoteTimeLeft) && !wallGrounded)
         {
             AddJumpForce(Vector3.up);
         }
-        else if (isWallInFront && wallGrounded)
+        else if (wallGrounded || haveCayoteTimeLeft)
         {
-            AddJumpForce(Vector3.up + -transform.forward);
+            CheckWallSide(lastCollision);
+            
+            switch (wallSide)
+            {
+                case WallSide.Front:
+                AddJumpForce(Vector3.up + -transform.forward);
+                break;
+
+                case WallSide.Back:
+                AddJumpForce(Vector3.up + transform.forward);
+                break;
+
+                case WallSide.Right:
+                AddJumpForce(Vector3.up + -transform.right);
+                break;
+
+                case WallSide.Left:
+                AddJumpForce(Vector3.up + transform.right);
+                break;
+            }
         }
-        else if (isWallInBack && wallGrounded)
+        else if (remainingAirJumps > 0)
         {
-            AddJumpForce(Vector3.up + transform.forward); 
-        }
-        else if (isWallOnRight)
-        {
-            AddJumpForce(Vector3.up + -transform.right);
-        }
-        else if (isWallOnLeft)
-        {
-            AddJumpForce(Vector3.up + transform.right);         
-        }
-        else if (remainingAirJumps >= 1)
-        {
-            rig.velocity = new Vector3(rig.velocity.x, 0, rig.velocity.z);
             AddJumpForce(Vector3.up);
             remainingAirJumps -= 1;
         }
@@ -705,6 +714,7 @@ public class PlayerScript : MonoBehaviour
     {
         rig.AddForce(direction * jumpForce, ForceMode.Impulse);
         camAnim.Play("Jump", camAnim.GetLayerIndex("Jump Layer"), 0.0f);
+        cayoteTime = 0;
     }
 
 
@@ -717,20 +727,16 @@ public class PlayerScript : MonoBehaviour
 
         // Check if Still WallGrounded
         wallColliders.Remove(other.collider);
-        Invoke(nameof(ReCheckWallGrounded), cayoteTime);
+        wallGrounded = wallColliders.Any();
 
         WallRunningAnims();
-    }
 
-    void ReCheckWallGrounded()
-    {
-        wallGrounded = wallColliders.Any();
+        lastGroundedTime = Time.time;
     }
 
     #endregion
 
     #region OtherFunctions
-
     private IEnumerator Dash() // Called In OnDashInput(). Adds Force, Waits dashTime. Then Resets player velocity to starting velocity * leaveVelocityMultiplier
     {
         Vector3 startVelocity = new(currentXSpeed, 0, currentZSpeed);
@@ -765,7 +771,7 @@ public class PlayerScript : MonoBehaviour
         crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, crouchTargetCamHeight, crouchCurve, crouchTransitionTime)));
         crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, crouchTargetColCenter, crouchCurve, crouchTransitionTime)));
         crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, crouchTargetColHeight, crouchCurve, crouchTransitionTime)));
-        crouching = true;
+        isCrouching = true;
     }
 
     private void UnCrouch() // Called In OnCrouchInput(). Starts A Bunch Of Coroutines to Move the Player
@@ -775,7 +781,7 @@ public class PlayerScript : MonoBehaviour
         crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime)));
         crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColCenter", curColCenter, defaultColCenter, crouchCurve, crouchTransitionTime)));
         crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curColHeight", curColHeight, defaultColHeight, crouchCurve, crouchTransitionTime)));
-        crouching = false;
+        isCrouching = false;
     }
 
     void StopCrouchingCoroutines()
@@ -809,34 +815,26 @@ public class PlayerScript : MonoBehaviour
 
     void WallRunRightIn()
     {
-        // StopWallRunCoroutines();
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunRightTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunRightTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+        wallrunning = true;
         camAnim.Play("Right In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
     }
 
     void WallRunRightOut()
     {
-        // StopWallRunCoroutines();
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+        wallrunning = false;
         camAnim.SetBool("Right Out", true);
         StartCoroutine(TurnOffWallRunTransitionBool());
     }
 
     void WallRunLeftIn()
     {
-        // StopWallRunCoroutines();
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, wallRunLeftTargetAngleY, wallRunAngleCurve, wallRunAngleTime)));
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, wallRunLeftTargetAngleZ, wallRunAngleCurve, wallRunAngleTime)));
+        wallrunning = true;
         camAnim.Play("Left In", camAnim.GetLayerIndex("Wall Running Layer"), 0.0f);
     }
 
     void WallRunLeftOut()
     {
-        // StopWallRunCoroutines();
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleY", curWallRunAngleY, 0, wallRunAngleCurve, wallRunAngleTime)));
-        // wallRunCoroutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curWallRunAngleZ", curWallRunAngleZ, 0, wallRunAngleCurve, wallRunAngleTime)));
+        wallrunning = false;
         camAnim.SetBool("Left Out", true);
         StartCoroutine(TurnOffWallRunTransitionBool());
     }
@@ -871,19 +869,22 @@ public class PlayerScript : MonoBehaviour
 
     private Vector2 AdjustInputForWallRun(Vector2 inputValue) // Disables Movement in Direction of Wall While WallRunning.
     {
-        if (wallGrounded)
+        if (wallrunning)
         {
             Vector2 adjustedInput = inputValue;
 
-            if (isWallOnRight)
+            switch (wallSide)
             {
+                case WallSide.Right:
                 adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, -1, 0), inputValue.y);
-            }
-            else if (isWallOnLeft)
-            {
-                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, 0, 1), inputValue.y);
-            }
+                break;    
 
+                case WallSide.Left:
+                adjustedInput = new Vector2(Mathf.Clamp(inputValue.x, 0, 1), inputValue.y);
+                break;                
+            }
+            
+            adjustedInput *= moveMultiplier;
             // Normalize to avoid slowing down diagonally, but preserve raw forward input (y)
             return new Vector2(adjustedInput.x, Mathf.Max(adjustedInput.y, inputValue.y)).normalized;
         }
