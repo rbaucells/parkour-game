@@ -320,12 +320,15 @@ public class PlayerScript : MonoBehaviour
         currentXSpeed = rig.velocity.x;
         currentZSpeed = rig.velocity.z;
         // Define player movement
-        Vector2 adjustedMoveValue = AdjustInputForWallRun(moveValue);
+        Vector2 adjustedMoveValue = moveValue;
         Vector3 move = transform.forward * adjustedMoveValue.y + transform.right * adjustedMoveValue.x;
         // Multiply Move Acceleration
         // Multiply Move Acceleration
         move *= moveForce;
-
+        if (wallGrounded)
+        {
+            move *= moveMultiplier;
+        }
         rig.AddForce(move, ForceMode.Acceleration); 
     }
 
@@ -479,9 +482,8 @@ public class PlayerScript : MonoBehaviour
     void OnCollisionEnter(Collision other)
     {
         // Ground Checks
-        CheckIfGrounded(other);
-
-        CheckWallSide(other);
+        GroundCheck(other);
+        WallGroundCheck(other);
 
         HoldingJumpButton();
 
@@ -496,16 +498,18 @@ public class PlayerScript : MonoBehaviour
 
     void OnCollisionStay(Collision other)
     {
-        //CheckIfGrounded(other);
-        CheckWallSide(other);
+        //GroundCheck(other);
+        WallGroundCheck(other);
         WallRunningAnims();
     }
 
-    void CheckIfGrounded(Collision other) // Called In OnCollisionEnter(). Checks If Any Collision Points at FeetYLevel
+    void GroundCheck(Collision other) // Called In OnCollisionEnter(). Checks If Any Collision Points at FeetYLevel
     {
         var contactPoints = new ContactPoint[other.contactCount];
         other.GetContacts(contactPoints);
+
         var feetYLevel = (transform.position.y + curColCenter) - curColHeight / 2;
+
         for (int i = 0; i < contactPoints.Length; i++)
         {
             if (Mathf.Abs(contactPoints[i].point.y - feetYLevel) < feetTolerance)
@@ -514,23 +518,25 @@ public class PlayerScript : MonoBehaviour
                 break;
             }
         }
+
         grounded = groundColiders.Any();
     }
 
-    void CheckWallSide(Collision other)
+    void WallGroundCheck(Collision other)
     {
-        Debug.Log("Entered CheckWallSide()");
         if (grounded || isCrouching)
             return;
+
         var contactPoints = new ContactPoint[other.contactCount];
         other.GetContacts(contactPoints);
+
         foreach (ContactPoint contactPoint in contactPoints)
         {
             float groundAngle = Vector3.Angle(contactPoint.normal, Vector3.up);
             
             if (groundAngle >= wallAngleMinMax.x && groundAngle <= wallAngleMinMax.y)
             {
-                // Find direction of wall by finding position relative to the player from transform.position to contactPoint.point by subtracting positions. Then when on wall side, lock player to the wall until click jump or click opposing button
+                // Get dot product of contact normal and player's forward/right/back/left vectors
                 Vector3 normal = contactPoint.normal;
 
                 float dotForward = Vector3.Dot(normal, transform.forward);
@@ -540,40 +546,35 @@ public class PlayerScript : MonoBehaviour
 
                 if (dotForward > 0.5f)
                 {
-                    Debug.Log("Wall is on Back");
                     wallColliders.Add(other.collider);
-                    wallAttractionDireciton = -normal.normalized;
+
                     wallSide = WallSide.Back;
                 }
                 else if (dotRight > 0.5f)
                 {
-                    Debug.Log("Wall is on Left");
                     wallColliders.Add(other.collider);
-                    wallAttractionDireciton = -normal.normalized;
+
                     wallSide = WallSide.Left;
                 }
                 else if (dotBack > 0.5f)
                 {
-                    Debug.Log("Wall is on Front");
                     wallColliders.Add(other.collider);
-                    wallAttractionDireciton = -normal.normalized;
+
                     wallSide = WallSide.Front;
                 }
                 else if (dotLeft > 0.5f)
                 {
-                    Debug.Log("Wall is on Right");
                     wallColliders.Add(other.collider);
-                    wallAttractionDireciton = -normal.normalized;
+
                     wallSide = WallSide.Right;
                 }
                 else
                 {
-                    Debug.Log("Wall is on None");
                     wallSide = WallSide.None;
                 }
             }
         }
-        Debug.Log("Checking if WallGrounded");
+
         wallGrounded = wallColliders.Any();
     }
 
@@ -682,7 +683,7 @@ public class PlayerScript : MonoBehaviour
         }
         else if (wallGrounded || haveCayoteTimeLeft)
         {
-            CheckWallSide(lastCollision);
+            WallGroundCheck(lastCollision);
             
             switch (wallSide)
             {
