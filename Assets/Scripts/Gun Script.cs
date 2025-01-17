@@ -33,9 +33,12 @@ public class GunScript : MonoBehaviour
     };
 
     public enum RecoilSize{
+        VerySmall,
         Small,
         Medium,
-        Big
+        Big,
+        VeryBig,
+        VeryVeryBig
     };
 
     public enum ImpactAction{
@@ -110,7 +113,6 @@ public class GunScript : MonoBehaviour
     public RecoilSize recoilSize;
     public bool usePositionalRecoil;
     public float positionalRecoilForce;
-    private int recoilInt; // 1 = Small, 2 = Medium, 3 = Big
 
     //--------------------References--------------------//
     [Header("References")]
@@ -144,6 +146,8 @@ public class GunScript : MonoBehaviour
     private float fireAnimTime;
     private float reloadAnimTime;
     private float reloadInAnimTime;
+
+    private AnimationScript animController;
     //--------------------Input--------------------//
     public InputActionReference fireAction;
     public InputActionReference reloadAction;
@@ -155,7 +159,6 @@ public class GunScript : MonoBehaviour
         DefineComponents();
 
         SetAnimClipSizes();
-        SetRecoilSize();
 
         Debug.Log("Max Fire Rate: " + 60/fireAnimTime);
     }
@@ -170,6 +173,8 @@ public class GunScript : MonoBehaviour
 
         playerScript = GetComponentInParent<PlayerScript>();
         playerRig = playerScript.gameObject.GetComponent<Rigidbody>();
+
+        animController = playerScript.animController;
     }
 
     void SetAnimClipSizes() // Called in Awake(). Defines animTime values
@@ -189,22 +194,6 @@ public class GunScript : MonoBehaviour
                     reloadInAnimTime = clip.length;
                     break;
             }
-        }
-    }
-
-    void SetRecoilSize() // Called in Awake(). Defines recoilInt base on RecoilSize enum.
-    {
-        switch (recoilSize)
-        {
-            case RecoilSize.Small:
-                recoilInt = 1;
-                break;
-            case RecoilSize.Medium:
-                recoilInt = 2;
-                break;
-            case RecoilSize.Big:
-                recoilInt = 3;
-                break;
         }
     }
     #endregion
@@ -427,12 +416,37 @@ public class GunScript : MonoBehaviour
             playerRig.AddForce(-shootCenter.transform.forward * positionalRecoilForce, ForceMode.Impulse);
         // Play "Fire" animation
         anim.Play("Fire", 0, 0.0f);
-        playerScript.DoFireAnim(recoilInt);
+        Recoil();
         // Play the audio fireAudio
         audioSource.PlayOneShot(fireAudio);
         // Particle for Muzzle Flash
         ParticleSystem muzzleParticle = Instantiate(muzzleParticleSystem, attackPoint.position, Quaternion.identity);
         muzzleParticle.gameObject.transform.parent = transform.GetChild(0);
+    }
+
+    void Recoil()
+    {
+        switch (recoilSize)
+        {
+            case RecoilSize.VerySmall:
+                animController.Recoil(0);
+                break;
+            case RecoilSize.Small:
+                animController.Recoil(1);
+                break;
+            case RecoilSize.Medium:
+                animController.Recoil(2);
+                break;
+            case RecoilSize.Big:
+                animController.Recoil(3);
+                break;
+            case RecoilSize.VeryBig:
+                animController.Recoil(4);
+                break;
+            case RecoilSize.VeryVeryBig:
+                animController.Recoil(5);
+                break;
+        }
     }
 
     private IEnumerator RaycastSpawnTrail(Vector3 start, Vector3 end, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path

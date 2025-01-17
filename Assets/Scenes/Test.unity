@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657826, g: 0.49641263, b: 0.57481676, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657868, g: 0.49641263, b: 0.5748171, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1066,8 +1066,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 294868990}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0.10490666, y: -0.33905348, z: 0.22742265, w: 0.9068166}
+  m_LocalPosition: {x: 11.5, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1099,7 +1099,7 @@ Transform:
   - {fileID: 653847973}
   - {fileID: 277463087}
   m_Father: {fileID: 57900413}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 20.15, y: -37.17, z: 21.32}
 --- !u!1 &299162908
 GameObject:
   m_ObjectHideFlags: 0
@@ -6856,7 +6856,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 891919486772408319}
-  - component: {fileID: 2985901841639486075}
   - component: {fileID: 2985901841639486076}
   m_Layer: 3
   m_Name: Camera Container
@@ -7079,28 +7078,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!95 &2985901841639486075
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 904734132732994884}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: cee40dc57c48f4c3cb672f2495828ae4, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!120 &2985901841639486076
 LineRenderer:
   serializedVersion: 2
@@ -7253,6 +7230,8 @@ GameObject:
   - component: {fileID: 1672179607187074847}
   - component: {fileID: 3526298337802138041}
   - component: {fileID: 7192136180476255874}
+  - component: {fileID: 8814216806854569520}
+  - component: {fileID: 8814216806854569519}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -7517,7 +7496,7 @@ MonoBehaviour:
   maxAirJumps: 1
   cayoteTime: 0.5
   crouchType: 0
-  crouchTransitionTime: 0.2
+  crouchTransitionTime: 0.15
   curCamHeight: 0
   curColHeight: 0
   curColCenter: 0
@@ -7530,8 +7509,8 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 2
+      outSlope: 2
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
@@ -7550,9 +7529,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   crouchForcesAddPerSlam: 25
   timeToResetCrouchForces: 4
-  crouchDownForce: 50
-  maxCrouchDownForce: 175
-  crouchXMultiplier: 0
+  crouchDownForce: 90
+  maxCrouchDownForce: 241
   groundSlamAction: 0
   groundSlamUpForce: 70
   maxGroundSlamUpForce: 225
@@ -7561,24 +7539,56 @@ MonoBehaviour:
   groundSlamExplodeUpForce: 200
   groundSlamImplodeRadius: 6
   groundSlamImplodeForce: 20
-  wallAttractionForce: 500
-  moveMultiplier: 0.65
-  gravityMultiplier: 0.15
+  moveMultiplier: 1.5
+  gravityMultiplier: 0.05
   wallAngleMinMax: {x: 85, y: 95}
-  wallRunAngleTime: 0.333
   dashForce: 125
   dashDelay: 3
   dashTime: 0.35
   leaveVelocityMultiplier: 1.25
-  maxGrappleDistance: 150
-  damper: 0.2
-  spring: 10
   speedText: {fileID: 645401587}
-  shootCenter: {fileID: 0}
-  noFrictionMat: {fileID: 0}
+  animController: {fileID: 8814216806854569520}
   gunInventory:
   - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
+  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
+  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
+  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: cdea3df57c0534f4083ad7b62c2ce30c, type: 3}
+--- !u!95 &8814216806854569519
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3847371285132970422}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 92ce8a39a8b1aab43a8fa07588a84a24, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &8814216806854569520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3847371285132970422}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcb7327632b58b1488b2a7b646dd5828, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animator: {fileID: 8814216806854569519}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

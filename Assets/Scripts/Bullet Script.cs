@@ -29,8 +29,6 @@ public class BulletScript : MonoBehaviour
     }
     void OnCollisionEnter (Collision other)
     {
-        Debug.Log("Collided at:" + other.GetContact(0).point);
-        
         Instantiate(impactParticleSystem, other.GetContact(0).point, Quaternion.LookRotation(other.GetContact(0).normal));
         
         if (action == 0) // Aka explode
