@@ -189,6 +189,6 @@ public class AnimationScript : MonoBehaviour
     private void Play(string animName, string layerName)
     {
         Debug.Log("Playing " + animName + " on " + layerName);
-        animator.Play(animName, GetLayerIndex(layerName));
+        animator.Play(animName, GetLayerIndex(layerName), 0.0f);
     }
 }

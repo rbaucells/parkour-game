@@ -466,8 +466,8 @@ MonoBehaviour:
   actionRadius: 0
   actionForce: 0
   explosionUpForce: 0
-  recoilSize: 2
-  usePositionalRecoil: 1
+  recoilSize: 5
+  usePositionalRecoil: 0
   positionalRecoilForce: 125
   layerMask:
     serializedVersion: 2
