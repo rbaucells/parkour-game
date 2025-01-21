@@ -200,7 +200,9 @@ public class PlayerScript : MonoBehaviour
         foreach (GameObject gunObject in gunInventory)
         {
             GameObject curGun = Instantiate(gunObject, weaponContainer.transform);
-            curGun.transform.localPosition = curGun.GetComponent<GunScript>().weaponPos[counter];
+            GunScript curGunScript = curGun.GetComponent<GunScript>();
+            curGun.transform.localPosition = curGunScript.weaponPos[counter];
+            curGunScript.positionIndex = counter;
             counter += 1;
         }
 

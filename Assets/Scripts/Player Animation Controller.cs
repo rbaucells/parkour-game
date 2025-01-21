@@ -17,42 +17,59 @@ public class AnimationScript : MonoBehaviour
     /// 5 - Very Very Big
     /// </summary>
     /// <param name="size"></param>
-    public void Recoil(int size)
+    public void Recoil(int index, int size)
     {
         switch (size)
         {
             case 0:
-                Play("Very Small", "Very Small Recoil Layer");
+                Play("Very Small", ProcessIndex(index));
                 Debug.Log("Very Small Recoil");
                 break;
 
             case 1:
-                Play("Small", "Small Recoil Layer");
+                Play("Small", ProcessIndex(index));
                 Debug.Log("Small Recoil");
                 break;
 
             case 2:
-                Play("Medium", "Medium Recoil Layer");
+                Play("Medium", ProcessIndex(index));
                 Debug.Log("Medium Recoil");
                 break;
 
             case 3:
-                Play("Big", "Big Recoil Layer");
+                Play("Big", ProcessIndex(index));
                 Debug.Log("Big Recoil");
                 break;
 
             case 4:
-                Play("Very Big", "Very Big Recoil Layer");
+                Play("Very Big", ProcessIndex(index));
                 Debug.Log("Very Big Recoil");
                 break;
 
             case 5:
-                Play("Very Very Big", "Very Very Big Recoil Layer");
+                Play("Very Very Big", ProcessIndex(index));
                 Debug.Log("Very Very Big Recoil");
                 break;
-
         }
     }
+
+    string ProcessIndex(int index) 
+    {
+        switch (index)
+        {
+            case 0:
+                return "GunPos 0 Recoil Layer";
+            case 1:
+                return "GunPos 1 Recoil Layer";
+            case 2:
+                return "GunPos 2 Recoil Layer";
+            case 3:
+                return "GunPos 3 Recoil Layer";
+            default:
+                return null;
+        }
+    }
+
     /// <summary>
     /// 0 - Right in
     /// 1 - Left in
@@ -188,6 +205,11 @@ public class AnimationScript : MonoBehaviour
 
     private void Play(string animName, string layerName)
     {
+        if (layerName == null)
+        {
+            Debug.LogError("Layer name is null");
+            return;
+        }
         Debug.Log("Playing " + animName + " on " + layerName);
         animator.Play(animName, GetLayerIndex(layerName), 0.0f);
     }

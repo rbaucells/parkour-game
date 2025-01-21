@@ -7549,10 +7549,7 @@ MonoBehaviour:
   speedText: {fileID: 645401587}
   animController: {fileID: 8814216806854569520}
   gunInventory:
-  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
-  - {fileID: 1622843317210537893, guid: 35cdeab4ba3ad4b3094cf974fb9540a3, type: 3}
+  - {fileID: 211621289221986772, guid: bf33884868a4e428b88f4a0282740318, type: 3}
   groundSlamParticleSystem: {fileID: 1121192042590650, guid: cdea3df57c0534f4083ad7b62c2ce30c, type: 3}
 --- !u!95 &8814216806854569519
 Animator:

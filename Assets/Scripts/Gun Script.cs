@@ -126,6 +126,7 @@ public class GunScript : MonoBehaviour
 
     //--------------------Positions--------------------//
     public Vector3[] weaponPos = new Vector3[4];
+    public int positionIndex = 0;
     //--------------------Audio--------------------//
     [Header("Audio")]
     [OptionalField] public AudioClip reloadAudio;
@@ -429,22 +430,22 @@ public class GunScript : MonoBehaviour
         switch (recoilSize)
         {
             case RecoilSize.VerySmall:
-                animController.Recoil(0);
+                animController.Recoil(positionIndex, 0);
                 break;
             case RecoilSize.Small:
-                animController.Recoil(1);
+                animController.Recoil(positionIndex, 1);
                 break;
             case RecoilSize.Medium:
-                animController.Recoil(2);
+                animController.Recoil(positionIndex, 2);
                 break;
             case RecoilSize.Big:
-                animController.Recoil(3);
+                animController.Recoil(positionIndex, 3);
                 break;
             case RecoilSize.VeryBig:
-                animController.Recoil(4);
+                animController.Recoil(positionIndex, 4);
                 break;
             case RecoilSize.VeryVeryBig:
-                animController.Recoil(5);
+                animController.Recoil(positionIndex, 5);
                 break;
         }
     }

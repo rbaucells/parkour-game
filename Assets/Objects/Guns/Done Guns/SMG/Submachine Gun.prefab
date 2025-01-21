@@ -205,8 +205,6 @@ MonoBehaviour:
   fireRateMin: 800
   useBulletSpread: 1
   bulletVariance: {x: 0.2, y: 0.2}
-  distanceBasedSpread: 1
-  distanceDivision: 12
   useBurst: 0
   numberOfShotsInBurst: 0
   delayBetweenBursts: 0
@@ -221,7 +219,7 @@ MonoBehaviour:
   actionRadius: 0
   actionForce: 0
   explosionUpForce: 0
-  recoilSize: 0
+  recoilSize: 1
   usePositionalRecoil: 0
   positionalRecoilForce: 0
   layerMask:
@@ -233,6 +231,7 @@ MonoBehaviour:
   - {x: -1.283, y: -0.615, z: 0.919}
   - {x: -1.283, y: 0.55, z: 0.919}
   - {x: 1.283, y: 0.55, z: 0.919}
+  positionIndex: 0
   reloadAudio: {fileID: 0}
   fireAudio: {fileID: 8300000, guid: c2de271c418204e6882697b30646d95f, type: 3}
   audio1: {fileID: 8300000, guid: 5fb80da9499ac40c7bda8fce90e0b7fb, type: 3}
