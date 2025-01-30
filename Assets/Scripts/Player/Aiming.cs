@@ -3,47 +3,56 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Aiming : PlayerMain
+public class Aiming : MonoBehaviour
 {
-    public float controllerLookSens;
-    public float mouseLookSens;
+    [SerializeField] PlayerMain playerMain; 
 
-    private float lookSenseToUse;
+    [SerializeField] [Range(0, 100)] float controllerLookSens;
+    [SerializeField] [Range(0, 10)] float mouseLookSens; 
 
-    [Tooltip("Up and Down Rotation")] public float maxX;
-    [Tooltip("Up and Down Rotation")] public float minX;
+    float lookSenseToUse; // Depends on inputType
 
-    public float curCameraX;
+    [SerializeField] [Range(0, 180)] float maxX;
+    [SerializeField] [Range(-180, 0)] float minX;
 
-    Vector2 deltaMouseValue;
+    [SerializeField] Transform cameraContainer;
+
+    Vector2 deltaMouseValue; // Look Input from Player
+    float curCameraX; // Current X Rotation of Camera
 
     void Start()
     {
-        if (Gamepad.all.Count > 0)
+        // Set Look Sensitivity depending on inputType
+        switch (playerMain.inputType)
         {
-            lookSenseToUse = controllerLookSens;
-            inputType = InputType.Controller;
+            case PlayerMain.InputType.Keyboard:
+                lookSenseToUse = mouseLookSens;
+                break;
+            case PlayerMain.InputType.Controller:
+                lookSenseToUse = controllerLookSens;
+                break;
         }
-        else
-        {
-            lookSenseToUse = mouseLookSens;
-            inputType = InputType.Keyboard;
-        }
+        // Lock Cursor
+        Cursor.lockState = CursorLockMode.Locked;
     }
     public void OnLookInput(InputAction.CallbackContext context)
     {
-        // Stores Delta Look Value
+        // Store Delta Look Value
         deltaMouseValue = context.ReadValue<Vector2>();
     }
 
     void FixedUpdate()
     {
-        // Rotate the Camera
+        // Add Delta Mouse Value to previous Value
         curCameraX += deltaMouseValue.y * lookSenseToUse;
+
+        // Clamp it to MinMax
         curCameraX = Mathf.Clamp(curCameraX, minX, maxX);
 
+        // Rotate CameraContainer Up/Down
         cameraContainer.localEulerAngles = new Vector3(-curCameraX, 0, 0);
 
+        // Rotate player Left/Right
         transform.eulerAngles += new Vector3(0, deltaMouseValue.x * lookSenseToUse, 0);
     }
 }

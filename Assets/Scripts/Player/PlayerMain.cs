@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.InputSystem;
 public class PlayerMain : MonoBehaviour
 {
     public enum MoveState
@@ -45,27 +45,31 @@ public class PlayerMain : MonoBehaviour
         Controller
     }
 
-    [HideInInspector] public MoveState moveState;
-    [HideInInspector] public MoveDirection moveDirection;
-    [HideInInspector] public GroundState groundState;
-    [HideInInspector] public WallState wallState;
-    [HideInInspector] public InputType inputType;
+    public enum CrouchState
+    {
+        Crouched,
+        Standing
+    }
 
-    public Rigidbody rig;
+    // Player State Enums
+    [HideInInspector] public MoveState moveState = MoveState.Idle;
+    [HideInInspector] public MoveDirection moveDirection = MoveDirection.None;
+    [HideInInspector] public GroundState groundState = GroundState.Airborne;
+    [HideInInspector] public WallState wallState = WallState.None;
+    [HideInInspector] public InputType inputType = InputType.Keyboard;
+    [HideInInspector] public CrouchState crouchState = CrouchState.Standing;
 
-    [HideInInspector] public Vector2 moveInputValue;
-
+    // Fields for Multiple Scripts
+    [HideInInspector] public bool canSlam;
     [HideInInspector] public float lastGroundedTime;
-
+    // Commomn References
     public Transform cameraContainer;
 
     void Awake()
     {
-        rig = GetComponent<Rigidbody>();
-
-        moveState = MoveState.Idle;
-        moveDirection = MoveDirection.None;
-        groundState = GroundState.Airborne;
-        wallState = WallState.None;
+        if (Gamepad.all.Count > 0)
+            inputType = InputType.Controller;
+        else
+            inputType = InputType.Keyboard;
     }
 }

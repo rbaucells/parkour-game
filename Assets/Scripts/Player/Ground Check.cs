@@ -3,21 +3,29 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class GroundCheck : PlayerMain
+public class GroundCheck : MonoBehaviour
 {
-    CapsuleCollider col;
+    [SerializeField] PlayerMain playerMain;
+
+    [SerializeField] int wallAngleMin = 85;
+    [SerializeField] int wallAngleMax = 95;
+
+    [SerializeField] float groundSlamForce;
     
-    const float feetTolerance = 0.3f;
+    ISet<Collider> groundColliders = new HashSet<Collider>();
+    ISet<Collider> wallColliders = new HashSet<Collider>();
 
-    private ISet<Collider> groundColiders = new HashSet<Collider>();
-    private ISet<Collider> wallColliders = new HashSet<Collider>();
+    const float GROUND_TOLERANCE = 0.3f;
 
-    public Vector2 wallAngleMinMax = new Vector2(85, 95);
+    CapsuleCollider col;
+    Rigidbody rig;
 
     void Awake()
     {
         // Get Collider Reference
-        col = gameObject.GetComponent<CapsuleCollider>();;
+        col = GetComponent<CapsuleCollider>();
+        // Get Rigidbody Reference
+        rig = GetComponent<Rigidbody>();
     }
 
     void OnCollisionEnter(Collision other)
@@ -34,20 +42,20 @@ public class GroundCheck : PlayerMain
         foreach (var contactPoint in contactPoints)
         {
             // Check if the contact point is near the feet
-            if (Mathf.Abs(contactPoint.point.y - feetYLevel) < feetTolerance)
+            if (Mathf.Abs(contactPoint.point.y - feetYLevel) < GROUND_TOLERANCE)
             {
                 // That collider is ground
-                groundColiders.Add(other.collider);
+                groundColliders.Add(other.collider);
                 break;
             }
         }
 
-        bool curGrounded = groundColiders.Any();
+        bool curGrounded = groundColliders.Any();
 
         // If we are grounded and we were not grounded before
-        if (curGrounded && groundState != GroundState.Grounded)
+        if (curGrounded && playerMain.groundState != PlayerMain.GroundState.Grounded)
         {
-            StartGrounded();
+            StartGrounded(other);
         }
         // Loop through the contact points
         foreach (var contactPoint in contactPoints)
@@ -55,7 +63,7 @@ public class GroundCheck : PlayerMain
             Vector3 normal = contactPoint.normal;
             float wallToGroundAngle = Vector3.Angle(normal, Vector3.up);
             
-            if (wallToGroundAngle >= wallAngleMinMax.x && wallToGroundAngle <= wallAngleMinMax.y)
+            if (wallToGroundAngle >= wallAngleMin && wallToGroundAngle <= wallAngleMax)
             {
                 // Get the dot product between the contact point normal and the Transforms directions
                 float dotForward = Vector3.Dot(normal, transform.forward);
@@ -67,35 +75,35 @@ public class GroundCheck : PlayerMain
                 {
                     wallColliders.Add(other.collider);
 
-                    wallState = WallState.Back;
+                    playerMain.wallState = PlayerMain.WallState.Back;
                 }
                 else if (dotRight > 0.5f)
                 {
                     wallColliders.Add(other.collider);
 
-                    wallState = WallState.Left;
+                    playerMain.wallState = PlayerMain.WallState.Left;
                 }
                 else if (dotBack > 0.5f)
                 {
                     wallColliders.Add(other.collider);
 
-                    wallState = WallState.Front;
+                    playerMain.wallState = PlayerMain.WallState.Front;
                 }
                 else if (dotLeft > 0.5f)
                 {
                     wallColliders.Add(other.collider);
 
-                    wallState = WallState.Right;
+                    playerMain.wallState = PlayerMain.WallState.Right;
                 }
                 else
                 {
-                    wallState = WallState.None;
+                    playerMain.wallState = PlayerMain.WallState.None;
                 }
             }
         }
 
         // If we are wall grounded and we were not wall grounded before
-        if (groundState == GroundState.Airborne && wallColliders.Any())
+        if (playerMain.groundState == PlayerMain.GroundState.Airborne && wallColliders.Any())
         {
             StartWallGrounded();
         }
@@ -104,12 +112,12 @@ public class GroundCheck : PlayerMain
     void OnCollisionExit(Collision other)
     {
         // Remove the collider from the grounded colliders
-        groundColiders.Remove(other.collider);
+        groundColliders.Remove(other.collider);
 
-        bool curGrounded = groundColiders.Any();
+        bool curGrounded = groundColliders.Any();
 
         // If we are not grounded and we were grounded before
-        if (!curGrounded && groundState == GroundState.Grounded)
+        if (!curGrounded && playerMain.groundState == PlayerMain.GroundState.Grounded)
         {
             StopGrounded();
         }
@@ -120,41 +128,49 @@ public class GroundCheck : PlayerMain
         bool curWallGrounded = wallColliders.Any();
 
         // If we are not wall grounded and we were wall grounded before
-        if (curWallGrounded && groundState == GroundState.WallGrounded)
+        if (!curWallGrounded && playerMain.groundState == PlayerMain.GroundState.WallGrounded)
         {
             StopWallGrounded();
         }
     }
 
-    void StartGrounded()
+    void StartGrounded(Collision other)
     {
-        groundState = GroundState.Grounded;
+        if (playerMain.canSlam)
+        {
+            // Apply ground slam force
+            rig.AddForce(other.GetContact(0).normal * groundSlamForce, ForceMode.Impulse);
+
+            Debug.Log("Ground Slam");
+
+            playerMain.canSlam = false;
+        }
+        playerMain.groundState = PlayerMain.GroundState.Grounded;
     }
 
     void StopGrounded()
     {
-        groundState = GroundState.Airborne;
-
+        playerMain.groundState = PlayerMain.GroundState.Airborne;
         
-        lastGroundedTime = Time.time;
+        playerMain.lastGroundedTime = Time.time;
     }
 
     void StartWallGrounded()
     {
-        groundState = GroundState.WallGrounded;
+        playerMain.groundState = PlayerMain.GroundState.WallGrounded;
 
-        switch (wallState)
+        switch (playerMain.wallState)
         {
-            case WallState.Right:
+            case PlayerMain.WallState.Right:
                 Debug.Log("Enter Right");
                 break;
-            case WallState.Left:
+            case PlayerMain.WallState.Left:
                 Debug.Log("Enter Left");
                 break;
-            case WallState.Front:
+            case PlayerMain.WallState.Front:
                 Debug.Log("Enter Front");
                 break;
-            case WallState.Back:
+            case PlayerMain.WallState.Back:
                 Debug.Log("Enter Back");
                 break;
         }
@@ -162,26 +178,26 @@ public class GroundCheck : PlayerMain
 
     void StopWallGrounded()
     {
-        groundState = GroundState.Airborne;
+        playerMain.groundState = PlayerMain.GroundState.Airborne;
 
-        switch (wallState)
+        switch (playerMain.wallState)
         {
-            case WallState.Right:
-                Debug.Log("Enter Right");
+            case PlayerMain.WallState.Right:
+                Debug.Log("Exit Right");
                 break;
-            case WallState.Left:
-                Debug.Log("Enter Left");
+            case PlayerMain.WallState.Left:
+                Debug.Log("Exit Left");
                 break;
-            case WallState.Front:
-                Debug.Log("Enter Front");
+            case PlayerMain.WallState.Front:
+                Debug.Log("Exit Front");
                 break;
-            case WallState.Back:
-                Debug.Log("Enter Back");
+            case PlayerMain.WallState.Back:
+                Debug.Log("Exit Back");
                 break;
         }
 
-        wallState = WallState.None;
+        playerMain.wallState = PlayerMain.WallState.None;
 
-        lastGroundedTime = Time.time;
+        playerMain.lastGroundedTime = Time.time;
     }
 }

@@ -4,11 +4,24 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Movement : PlayerMain
+public class Movement : MonoBehaviour
 {
-    const float moveThreshold = 0.1f;
+    [SerializeField] PlayerMain playerMain;
 
-    public float moveSpeed = 5f;
+    [SerializeField] float moveSpeed = 5f;
+
+    [SerializeField] [Range(0, 100)] float gravityForce;
+
+    const float MOVE_THRESHOLD = 0.1f;
+
+    Vector2 moveInputValue;
+    Rigidbody rig;
+
+    void Awake()
+    {
+        // Get Rigidbody Reference
+        rig = GetComponent<Rigidbody>();
+    }
 
     public void OnMoveInput(InputAction.CallbackContext context)
     {
@@ -25,30 +38,32 @@ public class Movement : PlayerMain
 
     void FixedUpdate()
     {
-        bool curMoving = (Mathf.Abs(moveInputValue.x) >= moveThreshold) && (Mathf.Abs(moveInputValue.y) >= moveThreshold);
-
+        bool curMoving = (moveInputValue.magnitude > MOVE_THRESHOLD);
+        // If we are moving
         if (curMoving)
         {
             // If we were idle, start moving
-            if (moveState == MoveState.Idle)
+            if (playerMain.moveState == PlayerMain.MoveState.Idle)
             {
                 StartMoving();
             }
-
-            moveState = MoveState.Moving;
+            // Set move state
+            playerMain.moveState = PlayerMain.MoveState.Moving;
 
             WhileMoving();
         }
         else
         {
             // If we were moving, stop moving
-            if (moveState == MoveState.Moving)
+            if (playerMain.moveState == PlayerMain.MoveState.Moving)
             {
                 StopMoving();
             }
 
-            moveState = MoveState.Idle;
+            playerMain.moveState = PlayerMain.MoveState.Idle;
         }
+        // Apply Gravity
+        rig.AddForce(-transform.up * gravityForce, ForceMode.Acceleration);
     }
 
     void StartMoving()
@@ -63,13 +78,13 @@ public class Movement : PlayerMain
         rig.AddRelativeForce(new Vector3(moveInputValue.x, 0, moveInputValue.y) * moveSpeed, ForceMode.Acceleration);
 
         // Determine the direction of movement
-        if (moveInputValue.y > moveThreshold)
+        if (moveInputValue.y > MOVE_THRESHOLD)
         {
-            if (moveInputValue.x > moveThreshold)
+            if (moveInputValue.x > MOVE_THRESHOLD)
             {
                 Debug.Log("Forward Right");
             }
-            else if (moveInputValue.x < -moveThreshold)
+            else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
                 Debug.Log("Forward Left");
             }
@@ -78,13 +93,13 @@ public class Movement : PlayerMain
                 Debug.Log("Forward");
             }
         }
-        else if (moveInputValue.y < -moveThreshold)
+        else if (moveInputValue.y < -MOVE_THRESHOLD)
         {
-            if (moveInputValue.x > moveThreshold)
+            if (moveInputValue.x > MOVE_THRESHOLD)
             {
                 Debug.Log("Back Right");
             }
-            else if (moveInputValue.x < -moveThreshold)
+            else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
                 Debug.Log("Back Left");
             }
@@ -95,11 +110,11 @@ public class Movement : PlayerMain
         }
         else
         {
-            if (moveInputValue.x > moveThreshold)
+            if (moveInputValue.x > MOVE_THRESHOLD)
             {
                 Debug.Log("Right");
             }
-            else if (moveInputValue.x < -moveThreshold)
+            else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
                 Debug.Log("Left");
             }
