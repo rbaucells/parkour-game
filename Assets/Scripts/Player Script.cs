@@ -125,6 +125,7 @@ public class PlayerScript : MonoBehaviour
 
     private bool allowGroundSlam;
     private float lastGroundSlamTime;
+    private bool canAddForce;
 
     //--------------------Explode--------------------//
     [Header("Explode")]
@@ -281,7 +282,7 @@ public class PlayerScript : MonoBehaviour
         }
         else
             rig.AddForce(Vector3.down * gravityForce, ForceMode.Acceleration);
-        if (isCrouching && !(grounded && wallGrounded))
+        if (isCrouching && !(grounded && wallGrounded) && canAddForce)
         {
             rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
         }
@@ -339,6 +340,7 @@ public class PlayerScript : MonoBehaviour
         if (grounded || wallGrounded)
         {
             allowGroundSlam = false;
+            canAddForce = false;
         }   
     }
 
@@ -736,7 +738,10 @@ public class PlayerScript : MonoBehaviour
     private void Crouch() // Called In OnCrouchInput(). Starts A Bunch Of Coroutines to Move the Player
     {
         if (!grounded) 
+        {
             allowGroundSlam = true;
+            canAddForce = true;
+        }
         isCrouching = true;
         Debug.Log("Crouch");
         StopCrouchingCoroutines();
@@ -748,6 +753,7 @@ public class PlayerScript : MonoBehaviour
     private void UnCrouch() // Called In OnCrouchInput(). Starts A Bunch Of Coroutines to Move the Player
     {
         isCrouching = false;
+        canAddForce = false;
         Debug.Log("UnCrouch");
         StopCrouchingCoroutines();
         crouchingCorutines.Add(StartCoroutine(Algorithms.CurveLerp(this, "curCamHeight", curCamHeight, defaultCamHeight, crouchCurve, crouchTransitionTime)));
