@@ -5,12 +5,13 @@ using UnityEngine.InputSystem;
 
 public class Jumping : MonoBehaviour
 {
-    [SerializeField] PlayerMain playerMain;
-
+    
+    [HideInInspector] public bool jumpHeld;
     [SerializeField] float jumpForce;
-    [SerializeField] int airJumps;
+    GroundCheck groundCheckScript;
 
-    int remainingAirJumps;
+    public int maxAirJumps;
+    [HideInInspector] public int remainingAirJumps;
 
     Rigidbody rig;
     
@@ -19,38 +20,38 @@ public class Jumping : MonoBehaviour
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
         // Set Default AirJumps
-        remainingAirJumps = airJumps;
+        remainingAirJumps = maxAirJumps;
+        // Get GroundCheck Script Reference
+        groundCheckScript = GetComponent<GroundCheck>();
     }
-    void FixedUpdate()
-    {
-        // If we are grounded
-        if (playerMain.groundState != PlayerMain.GroundState.Airborne)
-        {
-            // Reset AirJumps
-            remainingAirJumps = airJumps;
-        }
-    }
+
     public void OnJumpInput(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed)
         {
             // Determine Which Type of Jump to do
-            switch (playerMain.groundState)
+            switch (groundCheckScript.groundState)
             {
-                case PlayerMain.GroundState.Grounded:
+                case GroundCheck.GroundState.Grounded:
                     GroundedJump();
                     break;
-                case PlayerMain.GroundState.Airborne:
+                case GroundCheck.GroundState.Airborne:
                     AirborneJump();
                     break;
-                case PlayerMain.GroundState.WallGrounded:
+                case GroundCheck.GroundState.WallGrounded:
                     WallJump();
                     break;
             }
+
+            jumpHeld = true;
+        }
+        else if (context.phase == InputActionPhase.Canceled)
+        {
+            jumpHeld = false;
         }
     }
 
-    void GroundedJump()
+    public void GroundedJump()
     {
         rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
     }
@@ -68,18 +69,18 @@ public class Jumping : MonoBehaviour
     void WallJump()
     {
         // Jump Depending on WallSide
-        switch (playerMain.wallState)
+        switch (groundCheckScript.wallState)
         {
-            case PlayerMain.WallState.Right:
+            case GroundCheck.WallState.Right:
                 rig.AddForce((-transform.right + transform.up) * jumpForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.WallState.Left:
+            case GroundCheck.WallState.Left:
                 rig.AddForce((transform.right + transform.up) * jumpForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.WallState.Front:
+            case GroundCheck.WallState.Front:
                 rig.AddForce((-transform.forward + transform.up) * jumpForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.WallState.Back:
+            case GroundCheck.WallState.Back:
                 rig.AddForce((transform.forward + transform.up) * jumpForce, ForceMode.Impulse);
                 break;
         }

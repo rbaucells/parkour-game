@@ -5,13 +5,35 @@ using UnityEngine;
 
 public class GroundCheck : MonoBehaviour
 {
-    [SerializeField] PlayerMain playerMain;
+    public enum GroundState
+    {
+        Grounded,
+        WallGrounded,
+        Airborne
+    }
+
+    public enum WallState
+    {
+        Right,
+        Left,
+        Front,
+        Back,
+        None
+    }
 
     [SerializeField] int wallAngleMin = 85;
     [SerializeField] int wallAngleMax = 95;
 
     [SerializeField] float groundSlamForce;
     
+    [HideInInspector] public GroundState groundState { get; private set; } = GroundState.Airborne;
+    [HideInInspector] public WallState wallState { get; private set; } = WallState.None;
+
+    [HideInInspector] public float lastGroundedTime;
+
+    Crouching crouchingScript;
+    Jumping jumpingScript;
+
     ISet<Collider> groundColliders = new HashSet<Collider>();
     ISet<Collider> wallColliders = new HashSet<Collider>();
 
@@ -26,6 +48,10 @@ public class GroundCheck : MonoBehaviour
         col = GetComponent<CapsuleCollider>();
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
+        // Get Crouching Script Reference
+        crouchingScript = GetComponent<Crouching>();
+        // Get Jumping Script Reference
+        jumpingScript = GetComponent<Jumping>();
     }
 
     void OnCollisionEnter(Collision other)
@@ -53,7 +79,7 @@ public class GroundCheck : MonoBehaviour
         bool curGrounded = groundColliders.Any();
 
         // If we are grounded and we were not grounded before
-        if (curGrounded && playerMain.groundState != PlayerMain.GroundState.Grounded)
+        if (curGrounded && groundState != GroundState.Grounded)
         {
             StartGrounded(other);
         }
@@ -75,35 +101,35 @@ public class GroundCheck : MonoBehaviour
                 {
                     wallColliders.Add(other.collider);
 
-                    playerMain.wallState = PlayerMain.WallState.Back;
+                    wallState = WallState.Back;
                 }
                 else if (dotRight > 0.5f)
                 {
                     wallColliders.Add(other.collider);
 
-                    playerMain.wallState = PlayerMain.WallState.Left;
+                    wallState = WallState.Left;
                 }
                 else if (dotBack > 0.5f)
                 {
                     wallColliders.Add(other.collider);
 
-                    playerMain.wallState = PlayerMain.WallState.Front;
+                    wallState = WallState.Front;
                 }
                 else if (dotLeft > 0.5f)
                 {
                     wallColliders.Add(other.collider);
 
-                    playerMain.wallState = PlayerMain.WallState.Right;
+                    wallState = WallState.Right;
                 }
                 else
                 {
-                    playerMain.wallState = PlayerMain.WallState.None;
+                    wallState = WallState.None;
                 }
             }
         }
 
         // If we are wall grounded and we were not wall grounded before
-        if (playerMain.groundState == PlayerMain.GroundState.Airborne && wallColliders.Any())
+        if (groundState == GroundState.Airborne && wallColliders.Any())
         {
             StartWallGrounded();
         }
@@ -117,7 +143,7 @@ public class GroundCheck : MonoBehaviour
         bool curGrounded = groundColliders.Any();
 
         // If we are not grounded and we were grounded before
-        if (!curGrounded && playerMain.groundState == PlayerMain.GroundState.Grounded)
+        if (!curGrounded && groundState == GroundState.Grounded)
         {
             StopGrounded();
         }
@@ -128,7 +154,7 @@ public class GroundCheck : MonoBehaviour
         bool curWallGrounded = wallColliders.Any();
 
         // If we are not wall grounded and we were wall grounded before
-        if (!curWallGrounded && playerMain.groundState == PlayerMain.GroundState.WallGrounded)
+        if (!curWallGrounded && groundState == GroundState.WallGrounded)
         {
             StopWallGrounded();
         }
@@ -136,68 +162,78 @@ public class GroundCheck : MonoBehaviour
 
     void StartGrounded(Collision other)
     {
-        if (playerMain.canSlam)
+        groundState = GroundState.Grounded;
+
+        if (crouchingScript.canSlam)
         {
             // Apply ground slam force
             rig.AddForce(other.GetContact(0).normal * groundSlamForce, ForceMode.Impulse);
 
             Debug.Log("Ground Slam");
 
-            playerMain.canSlam = false;
+            crouchingScript.canSlam = false;
         }
-        playerMain.groundState = PlayerMain.GroundState.Grounded;
+
+        if (jumpingScript.jumpHeld)
+        {
+            jumpingScript.GroundedJump();
+        }
+
+        jumpingScript.remainingAirJumps = jumpingScript.maxAirJumps;
     }
 
     void StopGrounded()
     {
-        playerMain.groundState = PlayerMain.GroundState.Airborne;
-        
-        playerMain.lastGroundedTime = Time.time;
+        groundState = GroundState.Airborne;
+
+        lastGroundedTime = Time.time;
     }
 
     void StartWallGrounded()
     {
-        playerMain.groundState = PlayerMain.GroundState.WallGrounded;
+        groundState = GroundState.WallGrounded;
 
-        switch (playerMain.wallState)
+        switch (wallState)
         {
-            case PlayerMain.WallState.Right:
+            case WallState.Right:
                 Debug.Log("Enter Right");
                 break;
-            case PlayerMain.WallState.Left:
+            case WallState.Left:
                 Debug.Log("Enter Left");
                 break;
-            case PlayerMain.WallState.Front:
+            case WallState.Front:
                 Debug.Log("Enter Front");
                 break;
-            case PlayerMain.WallState.Back:
+            case WallState.Back:
                 Debug.Log("Enter Back");
                 break;
         }
+
+        jumpingScript.remainingAirJumps = jumpingScript.maxAirJumps;
     }
 
     void StopWallGrounded()
     {
-        playerMain.groundState = PlayerMain.GroundState.Airborne;
+        groundState = GroundState.Airborne;
 
-        switch (playerMain.wallState)
+        switch (wallState)
         {
-            case PlayerMain.WallState.Right:
+            case WallState.Right:
                 Debug.Log("Exit Right");
                 break;
-            case PlayerMain.WallState.Left:
+            case WallState.Left:
                 Debug.Log("Exit Left");
                 break;
-            case PlayerMain.WallState.Front:
+            case WallState.Front:
                 Debug.Log("Exit Front");
                 break;
-            case PlayerMain.WallState.Back:
+            case WallState.Back:
                 Debug.Log("Exit Back");
                 break;
         }
 
-        playerMain.wallState = PlayerMain.WallState.None;
+        wallState = WallState.None;
 
-        playerMain.lastGroundedTime = Time.time;
+        lastGroundedTime = Time.time;
     }
 }

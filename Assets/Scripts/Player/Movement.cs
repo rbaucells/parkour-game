@@ -6,11 +6,31 @@ using UnityEngine.InputSystem;
 
 public class Movement : MonoBehaviour
 {
-    [SerializeField] PlayerMain playerMain;
+    public enum MoveState
+    {
+        Idle,
+        Moving
+    }
+
+    public enum MoveDirection
+    {
+        Forward,
+        ForwardRight,
+        Right,
+        BackRight,
+        Back,
+        BackLeft,
+        Left,
+        ForwardLeft,
+        None
+    }
 
     [SerializeField] float moveSpeed = 5f;
 
     [SerializeField] [Range(0, 100)] float gravityForce;
+
+    MoveState moveState = MoveState.Idle;
+    [HideInInspector] public MoveDirection moveDirection { get; private set; } = MoveDirection.None;
 
     const float MOVE_THRESHOLD = 0.1f;
 
@@ -43,24 +63,24 @@ public class Movement : MonoBehaviour
         if (curMoving)
         {
             // If we were idle, start moving
-            if (playerMain.moveState == PlayerMain.MoveState.Idle)
+            if (moveState == MoveState.Idle)
             {
                 StartMoving();
             }
             // Set move state
-            playerMain.moveState = PlayerMain.MoveState.Moving;
+            moveState = MoveState.Moving;
 
             WhileMoving();
         }
         else
         {
             // If we were moving, stop moving
-            if (playerMain.moveState == PlayerMain.MoveState.Moving)
+            if (moveState == MoveState.Moving)
             {
                 StopMoving();
             }
 
-            playerMain.moveState = PlayerMain.MoveState.Idle;
+            moveState = MoveState.Idle;
         }
         // Apply Gravity
         rig.AddForce(-transform.up * gravityForce, ForceMode.Acceleration);
@@ -82,14 +102,20 @@ public class Movement : MonoBehaviour
         {
             if (moveInputValue.x > MOVE_THRESHOLD)
             {
+                moveDirection = MoveDirection.ForwardRight;
+
                 Debug.Log("Forward Right");
             }
             else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
+                moveDirection = MoveDirection.ForwardLeft;
+
                 Debug.Log("Forward Left");
             }
             else
             {
+                moveDirection = MoveDirection.Forward;
+
                 Debug.Log("Forward");
             }
         }
@@ -97,14 +123,20 @@ public class Movement : MonoBehaviour
         {
             if (moveInputValue.x > MOVE_THRESHOLD)
             {
+                moveDirection = MoveDirection.BackRight;
+
                 Debug.Log("Back Right");
             }
             else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
+                moveDirection = MoveDirection.BackLeft;
+
                 Debug.Log("Back Left");
             }
             else
             {
+                moveDirection = MoveDirection.Back;
+
                 Debug.Log("Back");
             }
         }
@@ -112,10 +144,14 @@ public class Movement : MonoBehaviour
         {
             if (moveInputValue.x > MOVE_THRESHOLD)
             {
+                moveDirection = MoveDirection.Right;
+
                 Debug.Log("Right");
             }
             else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
+                moveDirection = MoveDirection.Left;
+
                 Debug.Log("Left");
             }
         }
@@ -127,5 +163,7 @@ public class Movement : MonoBehaviour
     {
         // Stop looping move anim and transition to idle
         Debug.Log("Stop Moving");
+
+        moveDirection = MoveDirection.None;
     }
 }

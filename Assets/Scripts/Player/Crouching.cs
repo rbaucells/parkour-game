@@ -8,16 +8,26 @@ using Debug = UnityEngine.Debug;
 
 public class Crouching : MonoBehaviour
 {
-    [SerializeField] PlayerMain playerMain;
+    public enum CrouchState
+    {
+        Crouched,
+        Standing
+    }
     
     [SerializeField] float crouchDownForce;
 
+    [HideInInspector] public bool canSlam;
+
+    CrouchState crouchState = CrouchState.Standing;
+    GroundCheck groundCheckScript;
     Rigidbody rig;
     
     void Awake()
     {
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
+        // Get GroundCheck Script Reference
+        groundCheckScript = GetComponent<GroundCheck>();
     }
 
     public void OnCrouchInput(InputAction.CallbackContext context)
@@ -35,7 +45,7 @@ public class Crouching : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (playerMain.crouchState == PlayerMain.CrouchState.Crouched)
+        if (crouchState == CrouchState.Crouched)
         {
             WhileCrouch();
         }
@@ -43,8 +53,10 @@ public class Crouching : MonoBehaviour
 
     void StartCrouch() // Called when crouch input is pressed
     {
-        if (playerMain.groundState == PlayerMain.GroundState.Airborne)
-            playerMain.canSlam = true;
+        if (groundCheckScript.groundState == GroundCheck.GroundState.Airborne)
+            canSlam = true;
+
+        crouchState = CrouchState.Crouched;
 
         Debug.Log("Start Crouch");
     }
@@ -52,7 +64,7 @@ public class Crouching : MonoBehaviour
     void WhileCrouch() // Called while crouch input is pressed [FixedUpdate]
     {
         // Apply downforce
-        if (playerMain.canSlam)
+        if (canSlam)
         {
             rig.AddForce(-transform.up * crouchDownForce, ForceMode.Acceleration);
         }
@@ -62,7 +74,9 @@ public class Crouching : MonoBehaviour
 
     void StopCrouch() // Called when crouch input is released
     {
-        playerMain.canSlam = false;
+        canSlam = false;
+
+        crouchState = CrouchState.Standing;
         
         Debug.Log("Stop Crouch");
     }

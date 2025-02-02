@@ -5,7 +5,11 @@ using UnityEngine.InputSystem;
 
 public class Aiming : MonoBehaviour
 {
-    [SerializeField] PlayerMain playerMain; 
+    public enum InputType
+    {
+        Keyboard,
+        Controller
+    }
 
     [SerializeField] [Range(0, 100)] float controllerLookSens;
     [SerializeField] [Range(0, 10)] float mouseLookSens; 
@@ -17,20 +21,23 @@ public class Aiming : MonoBehaviour
 
     [SerializeField] Transform cameraContainer;
 
+    InputType inputType = InputType.Keyboard;
+
     Vector2 deltaMouseValue; // Look Input from Player
     float curCameraX; // Current X Rotation of Camera
 
     void Start()
     {
         // Set Look Sensitivity depending on inputType
-        switch (playerMain.inputType)
+        if (Gamepad.current != null)
         {
-            case PlayerMain.InputType.Keyboard:
-                lookSenseToUse = mouseLookSens;
-                break;
-            case PlayerMain.InputType.Controller:
-                lookSenseToUse = controllerLookSens;
-                break;
+            inputType = InputType.Controller;
+            lookSenseToUse = controllerLookSens;
+        }
+        else
+        {
+            inputType = InputType.Keyboard;
+            lookSenseToUse = mouseLookSens;
         }
         // Lock Cursor
         Cursor.lockState = CursorLockMode.Locked;
@@ -41,7 +48,7 @@ public class Aiming : MonoBehaviour
         deltaMouseValue = context.ReadValue<Vector2>();
     }
 
-    void FixedUpdate()
+    void LateUpdate()
     {
         // Add Delta Mouse Value to previous Value
         curCameraX += deltaMouseValue.y * lookSenseToUse;

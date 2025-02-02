@@ -6,21 +6,22 @@ using UnityEngine.InputSystem;
 
 public class Dashing : MonoBehaviour
 {
-    [SerializeField] PlayerMain playerMain;
-
-    float lastDashTime;
-
+    Movement movementScript;
+    
     [SerializeField] float dashDelay = 1;
     [SerializeField] [Range(0, 200)] float dashForce;
 
     [SerializeField] Transform cameraContainer;
     
+    float lastDashTime;
     Rigidbody rig;
 
     void Awake()
     {
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
+        // Get Movement Script Reference
+        movementScript = GetComponent<Movement>();
     }
     public void OnDashInput(InputAction.CallbackContext context)
     {
@@ -34,30 +35,30 @@ public class Dashing : MonoBehaviour
     void StartDash()
     {
         // Apply dash force in direction
-        switch (playerMain.moveDirection)
+        switch (movementScript.moveDirection)
         {
-            case PlayerMain.MoveDirection.Forward:
+            case Movement.MoveDirection.Forward:
                 rig.AddForce(cameraContainer.forward * dashForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.MoveDirection.ForwardRight:
+            case Movement.MoveDirection.ForwardRight:
                 rig.AddForce((cameraContainer.forward + cameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.MoveDirection.Right:
+            case Movement.MoveDirection.Right:
                 rig.AddForce(transform.right * dashForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.MoveDirection.BackRight:
+            case Movement.MoveDirection.BackRight:
                 rig.AddForce((-cameraContainer.forward + cameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.MoveDirection.Back:
+            case Movement.MoveDirection.Back:
                 rig.AddForce(-cameraContainer.forward * dashForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.MoveDirection.BackLeft:
+            case Movement.MoveDirection.BackLeft:
                 rig.AddForce((-cameraContainer.forward + -cameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.MoveDirection.Left:
+            case Movement.MoveDirection.Left:
                 rig.AddForce(-cameraContainer.right * dashForce, ForceMode.Impulse);
                 break;
-            case PlayerMain.MoveDirection.ForwardLeft:
+            case Movement.MoveDirection.ForwardLeft:
                 rig.AddForce((cameraContainer.forward + -cameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
         }

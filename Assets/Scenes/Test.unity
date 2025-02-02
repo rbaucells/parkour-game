@@ -7054,7 +7054,6 @@ GameObject:
   - component: {fileID: 3582107242551246554}
   - component: {fileID: 3526298337802138041}
   - component: {fileID: 7192136180476255874}
-  - component: {fileID: 7969007692901562863}
   - component: {fileID: 7969007692901562862}
   - component: {fileID: 7969007692901562861}
   - component: {fileID: 7969007692901562860}
@@ -7247,7 +7246,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4beba93d6e144df0a97a53f2e21d99e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMain: {fileID: 7969007692901562863}
   controllerLookSens: 23
   mouseLookSens: 0.2
   maxX: 90
@@ -7265,8 +7263,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d502fcc44987c0941925c182501d5ce1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMain: {fileID: 7969007692901562863}
-  crouchDownForce: 125
+  crouchDownForce: 300
+  canSlam: 0
 --- !u!114 &7969007692901562859
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7279,11 +7277,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7dde0fb1b525fd448afa5d4bf0a30d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMain: {fileID: 7969007692901562863}
   dashDelay: 1
-  dashTime: 0.25
   dashForce: 200
-  velocityMultiplier: 1.25
   cameraContainer: {fileID: 891919486772408319}
 --- !u!114 &7969007692901562860
 MonoBehaviour:
@@ -7297,10 +7292,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9932d01072db74cf1b16b529bc2a6e77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMain: {fileID: 7969007692901562863}
   wallAngleMin: 85
   wallAngleMax: 95
   groundSlamForce: 200
+  lastGroundedTime: 0
 --- !u!114 &7969007692901562861
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7313,9 +7308,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90194fb39a4b02c449ebe4527389cbf4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMain: {fileID: 7969007692901562863}
-  jumpForce: 50
-  airJumps: 1
+  jumpHeld: 0
+  jumpForce: 35
+  cayoteTime: 1
+  maxAirJumps: 1
+  remainingAirJumps: 0
+  usedCayoteJump: 0
 --- !u!114 &7969007692901562862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7328,30 +7326,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77e36d85ed7ed45449bef53802b36eae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMain: {fileID: 7969007692901562863}
   moveSpeed: 100
-  gravityForce: 50
---- !u!114 &7969007692901562863
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3847371285132970422}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c7c70379c5c0472ea72f384927272cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveState: 0
-  moveDirection: 0
-  groundState: 0
-  wallState: 0
-  inputType: 0
-  crouchState: 0
-  canSlam: 0
-  lastGroundedTime: 0
-  cameraContainer: {fileID: 891919486772408319}
+  gravityForce: 60.6
 --- !u!114 &7969007692901562864
 MonoBehaviour:
   m_ObjectHideFlags: 0
