@@ -7309,11 +7309,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jumpHeld: 0
-  jumpForce: 35
-  cayoteTime: 1
+  jumpForce: 79.5
   maxAirJumps: 1
   remainingAirJumps: 0
-  usedCayoteJump: 0
 --- !u!114 &7969007692901562862
 MonoBehaviour:
   m_ObjectHideFlags: 0
