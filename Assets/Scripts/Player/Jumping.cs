@@ -10,6 +10,10 @@ public class Jumping : MonoBehaviour
     [SerializeField] float jumpForce;
     GroundCheck groundCheckScript;
 
+    [Range(0,1)] [SerializeField] float cayoteTime;
+
+    [HideInInspector] public bool usedCayoteTime;
+
     public int maxAirJumps;
     [HideInInspector] public int remainingAirJumps;
 
@@ -54,19 +58,35 @@ public class Jumping : MonoBehaviour
     public void GroundedJump()
     {
         rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+
+        usedCayoteTime = true;
     }
 
     void AirborneJump()
     {
-        // If we Haven't ran out of AirJumps
-        if (remainingAirJumps > 0)
+        if (groundCheckScript.lastGroundedTime + cayoteTime > Time.time && !usedCayoteTime)
         {
+            if (rig.velocity.y < 0)
+            {
+                rig.velocity = new(rig.velocity.x, 0, rig.velocity.z);
+            }
+            rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+            usedCayoteTime = true;
+        }
+        // If we Haven't ran out of AirJumps
+        else if (remainingAirJumps > 0)
+        {
+            if (rig.velocity.y < 0)
+            {
+                rig.velocity = new(rig.velocity.x, 0, rig.velocity.z);
+            }
+
             rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
             remainingAirJumps--;
         }
     }
 
-    void WallJump()
+    public void WallJump()
     {
         // Jump Depending on WallSide
         switch (groundCheckScript.wallState)
@@ -84,5 +104,7 @@ public class Jumping : MonoBehaviour
                 rig.AddForce((transform.forward + transform.up) * jumpForce, ForceMode.Impulse);
                 break;
         }
+
+        usedCayoteTime = true;
     }
 }

@@ -13,10 +13,22 @@ public class Crouching : MonoBehaviour
         Crouched,
         Standing
     }
+
+    public enum SlamAction
+    {
+        Explode,
+        Implode,
+        None
+    }
     
     [SerializeField] float crouchDownForce;
-
+    public SlamAction slamAction;
     [HideInInspector] public bool canSlam;
+
+    public float actionRadius;
+    public float actionForce;
+
+    public  float explosionUpForce;
 
     CrouchState crouchState = CrouchState.Standing;
     GroundCheck groundCheckScript;

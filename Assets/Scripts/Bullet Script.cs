@@ -33,11 +33,11 @@ public class BulletScript : MonoBehaviour
         
         if (action == 0) // Aka explode
         {
-            Algorithms.Explode(transform.position, actionRadius, actionForce, explosionUpForce);
+            Boom.Explode(transform.position, actionRadius, actionForce, explosionUpForce);
         }
         else if (action == 1)
         {
-            Algorithms.Implode(transform.position, actionRadius, actionForce);
+            Boom.Implode(transform.position, actionRadius, actionForce);
         }
 
         Destroy(gameObject);

@@ -20,6 +20,7 @@ public class GroundCheck : MonoBehaviour
         Back,
         None
     }
+    [SerializeField] [Range(0, 100)] float gravityForce;
 
     [SerializeField] int wallAngleMin = 85;
     [SerializeField] int wallAngleMax = 95;
@@ -39,6 +40,11 @@ public class GroundCheck : MonoBehaviour
 
     const float GROUND_TOLERANCE = 0.3f;
 
+    Vector3 wallAttractionDirection;
+    [SerializeField] float wallAttractionForce;
+
+    [Range(0,1)] public float gravityMultiplier;
+
     CapsuleCollider col;
     Rigidbody rig;
 
@@ -52,6 +58,15 @@ public class GroundCheck : MonoBehaviour
         crouchingScript = GetComponent<Crouching>();
         // Get Jumping Script Reference
         jumpingScript = GetComponent<Jumping>();
+    }
+
+    void FixedUpdate()
+    {
+        if (groundState != GroundState.WallGrounded)
+        {
+            // Apply Gravity
+            rig.AddForce(-transform.up * gravityForce, ForceMode.Acceleration);
+        }
     }
 
     void OnCollisionEnter(Collision other)
@@ -79,59 +94,144 @@ public class GroundCheck : MonoBehaviour
         bool curGrounded = groundColliders.Any();
 
         // If we are grounded and we were not grounded before
-        if (curGrounded && groundState != GroundState.Grounded)
+        if (curGrounded && groundState == GroundState.Airborne)
         {
-            StartGrounded(other);
+            AirborneToGrounded(other);
         }
-        // Loop through the contact points
-        foreach (var contactPoint in contactPoints)
+        // If we are grounded but we were WallGrounded. Transition
+        else if (curGrounded && groundState == GroundState.WallGrounded)
         {
-            Vector3 normal = contactPoint.normal;
-            float wallToGroundAngle = Vector3.Angle(normal, Vector3.up);
-            
-            if (wallToGroundAngle >= wallAngleMin && wallToGroundAngle <= wallAngleMax)
+            GroundedToWallGrounded(other);
+        }
+
+
+        if (groundState != GroundState.Grounded)
+        {
+            // Loop through the contact points
+            foreach (var contactPoint in contactPoints)
             {
-                // Get the dot product between the contact point normal and the Transforms directions
-                float dotForward = Vector3.Dot(normal, transform.forward);
-                float dotRight = Vector3.Dot(normal, transform.right);
-                float dotBack = Vector3.Dot(normal, -transform.forward);
-                float dotLeft = Vector3.Dot(normal, -transform.right);
-
-                if (dotForward > 0.5f)
+                Vector3 normal = contactPoint.normal;
+                float wallToGroundAngle = Vector3.Angle(normal, Vector3.up);
+                
+                if (wallToGroundAngle >= wallAngleMin && wallToGroundAngle <= wallAngleMax)
                 {
-                    wallColliders.Add(other.collider);
+                    // Get the dot product between the contact point normal and the Transforms directions
+                    float dotForward = Vector3.Dot(normal, transform.forward);
+                    float dotRight = Vector3.Dot(normal, transform.right);
+                    float dotBack = Vector3.Dot(normal, -transform.forward);
+                    float dotLeft = Vector3.Dot(normal, -transform.right);
 
-                    wallState = WallState.Back;
-                }
-                else if (dotRight > 0.5f)
-                {
-                    wallColliders.Add(other.collider);
+                    if (dotForward > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
 
-                    wallState = WallState.Left;
-                }
-                else if (dotBack > 0.5f)
-                {
-                    wallColliders.Add(other.collider);
+                        wallState = WallState.Back;
+                    }
+                    else if (dotRight > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
 
-                    wallState = WallState.Front;
-                }
-                else if (dotLeft > 0.5f)
-                {
-                    wallColliders.Add(other.collider);
+                        wallState = WallState.Left;
+                    }
+                    else if (dotBack > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
 
-                    wallState = WallState.Right;
-                }
-                else
-                {
-                    wallState = WallState.None;
+                        wallState = WallState.Front;
+                    }
+                    else if (dotLeft > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
+
+                        wallState = WallState.Right;
+                    }
+                    else
+                    {
+                        wallState = WallState.None;
+                    }
                 }
             }
-        }
 
-        // If we are wall grounded and we were not wall grounded before
-        if (groundState == GroundState.Airborne && wallColliders.Any())
+            // If we are wall grounded and we were not wall grounded before
+            if (groundState == GroundState.Airborne && wallColliders.Any())
+            {
+                AirborneToWallGrounded();
+            }
+        }
+    }
+
+    void OnCollisionStay(Collision other)
+    {
+        if (groundState == GroundState.Airborne)
         {
-            StartWallGrounded();
+            var contactPoints = new ContactPoint[other.contactCount];
+            other.GetContacts(contactPoints);
+            // Loop through the contact points
+            foreach (var contactPoint in contactPoints)
+            {
+                Vector3 normal = contactPoint.normal;
+                float wallToGroundAngle = Vector3.Angle(normal, Vector3.up);
+                
+                if (wallToGroundAngle >= wallAngleMin && wallToGroundAngle <= wallAngleMax)
+                {
+                    // Get the dot product between the contact point normal and the Transforms directions
+                    float dotForward = Vector3.Dot(normal, transform.forward);
+                    float dotRight = Vector3.Dot(normal, transform.right);
+                    float dotBack = Vector3.Dot(normal, -transform.forward);
+                    float dotLeft = Vector3.Dot(normal, -transform.right);
+
+                    if (dotForward > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
+
+                        wallState = WallState.Back;
+
+                        wallAttractionDirection = -normal;
+                    }
+                    else if (dotRight > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
+
+                        wallState = WallState.Left;
+
+                        wallAttractionDirection = -normal;
+                    }
+                    else if (dotBack > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
+
+                        wallState = WallState.Front;
+
+                        wallAttractionDirection = -normal;
+                    }
+                    else if (dotLeft > 0.5f)
+                    {
+                        wallColliders.Add(other.collider);
+
+                        wallState = WallState.Right;
+
+                        wallAttractionDirection = -normal;
+                    }
+                    else
+                    {
+                        wallState = WallState.None;
+
+                        wallAttractionDirection = Vector3.zero;
+                    }
+                }
+            }
+            // If we are wall grounded and we were not wall grounded before
+            if (groundState == GroundState.Airborne && wallColliders.Any())
+            {
+                AirborneToWallGrounded();
+            }
+        }
+        else if (groundState == GroundState.WallGrounded)
+        {
+            // Apply Gravity
+            rig.AddForce(-transform.up * gravityForce * gravityMultiplier, ForceMode.Acceleration);   
+            // Apply Wall Attraction Force
+            rig.AddForce(wallAttractionDirection * wallAttractionForce, ForceMode.Acceleration);
         }
     }
 
@@ -145,7 +245,7 @@ public class GroundCheck : MonoBehaviour
         // If we are not grounded and we were grounded before
         if (!curGrounded && groundState == GroundState.Grounded)
         {
-            StopGrounded();
+            GroundedToAirborne();
         }
 
         // Remove the collider from the wall colliders
@@ -156,11 +256,11 @@ public class GroundCheck : MonoBehaviour
         // If we are not wall grounded and we were wall grounded before
         if (!curWallGrounded && groundState == GroundState.WallGrounded)
         {
-            StopWallGrounded();
+            WallGroundedToAirborne();
         }
     }
 
-    void StartGrounded(Collision other)
+    void AirborneToGrounded(Collision other)
     {
         groundState = GroundState.Grounded;
 
@@ -172,6 +272,16 @@ public class GroundCheck : MonoBehaviour
             Debug.Log("Ground Slam");
 
             crouchingScript.canSlam = false;
+
+            switch (crouchingScript.slamAction)
+            {
+                case Crouching.SlamAction.Explode:
+                    Boom.Explode(other.GetContact(0).point, crouchingScript.actionRadius, crouchingScript.actionForce, crouchingScript.explosionUpForce);
+                    break;
+                case Crouching.SlamAction.Implode:
+                    Boom.Implode(other.GetContact(0).point, crouchingScript.actionRadius, crouchingScript.actionForce);
+                    break;
+            }
         }
 
         if (jumpingScript.jumpHeld)
@@ -180,16 +290,25 @@ public class GroundCheck : MonoBehaviour
         }
 
         jumpingScript.remainingAirJumps = jumpingScript.maxAirJumps;
+        jumpingScript.usedCayoteTime = false;
     }
 
-    void StopGrounded()
+    void GroundedToAirborne()
     {
         groundState = GroundState.Airborne;
 
         lastGroundedTime = Time.time;
     }
 
-    void StartWallGrounded()
+    void GroundedToWallGrounded(Collision other)
+    {
+        wallColliders.Remove(other.collider);
+        WallGroundedToAirborne();
+
+        AirborneToGrounded(other);
+    }
+
+    void AirborneToWallGrounded()
     {
         groundState = GroundState.WallGrounded;
 
@@ -210,9 +329,10 @@ public class GroundCheck : MonoBehaviour
         }
 
         jumpingScript.remainingAirJumps = jumpingScript.maxAirJumps;
+        jumpingScript.usedCayoteTime = false;
     }
 
-    void StopWallGrounded()
+    void WallGroundedToAirborne()
     {
         groundState = GroundState.Airborne;
 
@@ -235,5 +355,10 @@ public class GroundCheck : MonoBehaviour
         wallState = WallState.None;
 
         lastGroundedTime = Time.time;
+    }
+
+    void WhileWallGrounded()
+    {
+
     }
 }

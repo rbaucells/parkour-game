@@ -25,15 +25,16 @@ public class Movement : MonoBehaviour
         None
     }
 
-    [SerializeField] float moveSpeed = 5f;
+    GroundCheck groundCheck;
 
-    [SerializeField] [Range(0, 100)] float gravityForce;
+    [SerializeField] float moveSpeed = 5f;
 
     MoveState moveState = MoveState.Idle;
     [HideInInspector] public MoveDirection moveDirection { get; private set; } = MoveDirection.None;
 
     const float MOVE_THRESHOLD = 0.1f;
 
+    [SerializeField] Transform cameraContainer;
     Vector2 moveInputValue;
     Rigidbody rig;
 
@@ -41,6 +42,8 @@ public class Movement : MonoBehaviour
     {
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
+        // Get Ground Check Reference
+        groundCheck = GetComponent<GroundCheck>();
     }
 
     public void OnMoveInput(InputAction.CallbackContext context)
@@ -82,8 +85,6 @@ public class Movement : MonoBehaviour
 
             moveState = MoveState.Idle;
         }
-        // Apply Gravity
-        rig.AddForce(-transform.up * gravityForce, ForceMode.Acceleration);
     }
 
     void StartMoving()
