@@ -3,10 +3,7 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags:
-  - Delay Jump
-  - Gun
-  - Ground
+  tags: []
   layers:
   - Default
   - TransparentFX
@@ -14,9 +11,9 @@ TagManager:
   - Player
   - Water
   - UI
-  - Weapon
-  - Bullet
-  - Ground
+  - 
+  - 
+  - 
   - 
   - 
   - 
@@ -43,10 +40,4 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
-    locked: 0
-  - name: New Layer 1
-    uniqueID: 2169189749
-    locked: 0
-  - name: New Layer 2
-    uniqueID: 648011731
     locked: 0
