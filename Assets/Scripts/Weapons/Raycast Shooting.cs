@@ -1,7 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 public class RaycastShooting : MonoBehaviour
 {
@@ -26,7 +30,7 @@ public class RaycastShooting : MonoBehaviour
     [SerializeField] float force;
     [SerializeField] int numberOfBulletsInBurst = 0;
     [SerializeField] float timeBetweenBursts;
-
+    [SerializeField] float knockBackForce;
     bool bursting;
 
     float timeBetweenShots;
@@ -36,17 +40,22 @@ public class RaycastShooting : MonoBehaviour
     [SerializeField] LayerMask whatIsShootable;
 
     [SerializeField] InputActionReference fireInput;
-
-    [SerializeField] Transform cameraContainer;
     [SerializeField] Transform attackPoint;
-    [SerializeField] Reloading reloadingScript;
+
+    Transform cameraContainer;
+    Reloading reloadingScript;
+    Rigidbody playerRig;
     [SerializeField] TrailRenderer bulletTrail;
     [SerializeField] GameObject impactParticleSystem;
-
     void Start()
     {
         timeBetweenShots = 60/fireRate;
         Debug.Log ("Time Between Shots: " + timeBetweenShots);
+
+        cameraContainer = GameObject.Find("Camera Container").transform;
+        reloadingScript = GetComponent<Reloading>();
+
+        playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
     }
 
     void Update()
@@ -88,7 +97,7 @@ public class RaycastShooting : MonoBehaviour
         bursting = false;
     }
 
-    public void Shoot()
+    void Shoot()
     {
         if (reloadingScript.curMag <= 0)
         {
@@ -99,26 +108,27 @@ public class RaycastShooting : MonoBehaviour
 
         nextFireTime = (float) Time.timeAsDouble + timeBetweenShots;
 
-        // Debug.Log("Cur Time: " + Time.time + "Next Time: " + nextFireTime);
-
         for (int i = 0; i < numberOfBullets; i++)
         {
             RaycastFire();
         }
+
+        playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
     }
 
     void RaycastFire()
     {
         Ray ray = new(attackPoint.position, (GetTargetPoint() - attackPoint.position).normalized);
 
-        if (Physics.Raycast(ray, out RaycastHit hit, whatIsShootable))
+        Debug.DrawRay(ray.origin, ray.direction, Color.red, 2);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, whatIsShootable))
         {
             StartCoroutine(RaycastTrail(attackPoint.position, hit.point, hit.normal, true));
 
-            if (hit.rigidbody != null)
-            {
-                hit.rigidbody.AddForceAtPosition(ray.direction * force, hit.point, ForceMode.Impulse);
-            }
+            hit.rigidbody?.AddForceAtPosition(ray.direction * force, hit.point, ForceMode.Impulse);
+
+            Debug.Log("Hit Position at: " + hit.point + "Hit Rigidbyd name: " + hit.rigidbody + "On Layer: " + hit.collider.gameObject.layer);
         }
         else
         {
@@ -128,14 +138,20 @@ public class RaycastShooting : MonoBehaviour
 
     Vector3 GetTargetPoint()
     {
-        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), attackPoint.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), attackPoint.right) * cameraContainer.forward;
+        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), cameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), cameraContainer.right) * cameraContainer.forward;
 
-        Ray preRay = new(cameraContainer.position, direction);
+        Ray preRay = new(cameraContainer.position, direction.normalized);
+        
+        Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
 
-        if (Physics.Raycast(preRay, out RaycastHit hit, whatIsShootable))
+        if (Physics.Raycast(preRay, out RaycastHit hit, Mathf.Infinity, whatIsShootable))
+        {
             return hit.point;
+        }
         else
+        {
             return preRay.GetPoint(75);
+        }
     }
 
     public IEnumerator RaycastTrail(Vector3 start, Vector3 end, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path

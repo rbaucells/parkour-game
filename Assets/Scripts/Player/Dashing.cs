@@ -9,7 +9,7 @@ public class Dashing : MonoBehaviour
     Movement movementScript;
     
     [SerializeField] float dashDelay = 1;
-    [SerializeField] [Range(0, 200)] float dashForce;
+    [SerializeField] [Range(0, 15000)] float dashForce;
 
     [SerializeField] Transform cameraContainer;
     

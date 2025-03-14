@@ -14,18 +14,19 @@ public class ProjectileShooting : MonoBehaviour
     }
 
     [SerializeField] FireMode fireMode;
-    [SerializeField] bool burstFire;
 
-    [SerializeField] [Range(0,1500)] int fireRate;
+    [SerializeField] [Range(0,1500)] float fireRate;
 
     [SerializeField] Vector2 bulletSpread;
 
-    [SerializeField] int numberOfBullets;
+    [SerializeField] int numberOfBullets = 1;
 
     [SerializeField] float bulletForce;
 
     [SerializeField] int numberOfBulletsInBurst = 0;
     [SerializeField] float timeBetweenBursts;
+
+    [SerializeField] float knockBackForce;
 
     bool bursting;
 
@@ -35,16 +36,24 @@ public class ProjectileShooting : MonoBehaviour
 
     [SerializeField] LayerMask whatIsShootable;
 
-    [SerializeField] InputActionReference fireInput;
 
-    [SerializeField] Transform cameraContainer;
+    [SerializeField] InputActionReference fireInput;
     [SerializeField] Transform attackPoint;
-    [SerializeField] Reloading reloadingScript;
+
+    Transform cameraContainer;
+    Reloading reloadingScript;
+    Rigidbody playerRig;
     [SerializeField] GameObject bullet;
 
-    void Awake()
+    void Start()
     {
         timeBetweenShots = 60/fireRate;
+        Debug.Log ("Time Between Shots: " + timeBetweenShots);
+
+        cameraContainer = GameObject.Find("Camera Container").transform;
+        reloadingScript = GetComponent<Reloading>();
+
+        playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
     }
 
     void Update()
@@ -90,39 +99,50 @@ public class ProjectileShooting : MonoBehaviour
     void Shoot()
     {
         if (reloadingScript.curMag <= 0)
+        {
+            reloadingScript.Reload();
             return;
+        }
         reloadingScript.curMag--;
 
-        lastFireTime = (float) Time.timeAsDouble;
         nextFireTime = (float) Time.timeAsDouble + timeBetweenShots;
-
-        Debug.Log("Cur Time: " + Time.time + "Next Time: " + nextFireTime);
 
         for (int i = 0; i < numberOfBullets; i++)
         {
             ProjectileFire();
         }
+
+        playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
     }
 
     void ProjectileFire()
     {
-        Ray ray = new(attackPoint.position, (TargetPoint() - attackPoint.position).normalized);
+        Vector3 bulletDir = (GetTargetPoint() - attackPoint.position).normalized;
 
-        GameObject curBullet = Instantiate(bullet, attackPoint.position, Quaternion.LookRotation(ray.direction));
+        GameObject curBullet = Instantiate(bullet, attackPoint.position, Quaternion.identity);
+
+        curBullet.transform.forward = bulletDir;
+
         Rigidbody curRig = curBullet.GetComponent<Rigidbody>();
 
-        curRig.AddForce(ray.direction * bulletForce, ForceMode.Impulse);
+        curRig.AddRelativeForce(curBullet.transform.forward * bulletForce, ForceMode.Impulse);
     }
 
-    Vector3 TargetPoint()
+    Vector3 GetTargetPoint()
     {
-        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), attackPoint.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), attackPoint.right) * cameraContainer.forward;
+        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), cameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), cameraContainer.right) * cameraContainer.forward;
 
-        Ray preRay = new(cameraContainer.position, direction);
+        Ray preRay = new(cameraContainer.position , direction.normalized);
+        
+        Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
 
-        if (Physics.Raycast(preRay, out RaycastHit hit, whatIsShootable))
+        if (Physics.Raycast(preRay, out RaycastHit hit, Mathf.Infinity, whatIsShootable))
+        {
             return hit.point;
+        }
         else
+        {
             return preRay.GetPoint(75);
+        }
     }
 }

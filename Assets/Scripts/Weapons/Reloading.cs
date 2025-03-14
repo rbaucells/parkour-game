@@ -4,6 +4,12 @@ using UnityEngine;
 
 public class Reloading : MonoBehaviour
 {
+    public enum ReloadType
+    {
+        Magazine,
+        Repeating
+    }
+    [SerializeField] ReloadType reloadType;
     [SerializeField] int maxMagSize;
     public int curMag;
 
@@ -15,6 +21,18 @@ public class Reloading : MonoBehaviour
     }
     
     public void Reload()
+    {
+        switch (reloadType)
+        {
+            case ReloadType.Magazine:
+                MagazineReload();
+                break;
+            case ReloadType.Repeating:
+                break;
+        }
+    }
+
+    void MagazineReload()
     {
         curMag = maxMagSize;
     }
