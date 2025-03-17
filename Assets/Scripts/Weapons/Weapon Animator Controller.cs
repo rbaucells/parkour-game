@@ -6,7 +6,7 @@ public class WeaponAnimatorController : MonoBehaviour
 {
     public void FireAnim()
     {
-
+        
     }
 
     public void MagazineReload()
