@@ -36,13 +36,15 @@ public class ProjectileShooting : MonoBehaviour
 
     [SerializeField] LayerMask whatIsShootable;
 
-
     [SerializeField] InputActionReference fireInput;
     [SerializeField] Transform attackPoint;
-
+    [SerializeField] GameObject muzzleFlash;
     Transform cameraContainer;
     Reloading reloadingScript;
+    Audio audioPlayer;
     Rigidbody playerRig;
+
+    [SerializeField] AbstractGunAnimator gunAnimator;
     [SerializeField] GameObject bullet;
 
     void Start()
@@ -54,6 +56,8 @@ public class ProjectileShooting : MonoBehaviour
         reloadingScript = GetComponent<Reloading>();
 
         playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
+
+        audioPlayer = GetComponent<Audio>();
     }
 
     void Update()
@@ -61,7 +65,7 @@ public class ProjectileShooting : MonoBehaviour
         bool shootHeld = fireInput.action.IsPressed();
         bool shootThisFrame = fireInput.action.WasPerformedThisFrame();
         // Check if nextFireTime is in between this FixedUpdate call and the next
-        if (nextFireTime <= Time.time + Time.deltaTime * 0.552f)
+        if (nextFireTime <= Time.time + Time.deltaTime * 0.552f && !gunAnimator.IsReloading())
         {
             if ((shootHeld && fireMode == FireMode.Auto) || (shootThisFrame && fireMode == FireMode.SemiAuto))
             {
@@ -111,6 +115,11 @@ public class ProjectileShooting : MonoBehaviour
         {
             ProjectileFire();
         }
+
+        gunAnimator.Fire();
+        audioPlayer.FireSound();
+
+        Instantiate(muzzleFlash, attackPoint.position, attackPoint.rotation);
 
         playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
     }

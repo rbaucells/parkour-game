@@ -44,9 +44,14 @@ public class RaycastShooting : MonoBehaviour
 
     Transform cameraContainer;
     Reloading reloadingScript;
+    Audio audioPlayer;
     Rigidbody playerRig;
     [SerializeField] TrailRenderer bulletTrail;
     [SerializeField] GameObject impactParticleSystem;
+    [SerializeField] GameObject muzzleFlash;
+
+    [SerializeField] AbstractGunAnimator gunAnimator;
+
     void Start()
     {
         timeBetweenShots = 60/fireRate;
@@ -56,6 +61,8 @@ public class RaycastShooting : MonoBehaviour
         reloadingScript = GetComponent<Reloading>();
 
         playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
+
+        audioPlayer = GetComponent<Audio>();
     }
 
     void Update()
@@ -63,7 +70,7 @@ public class RaycastShooting : MonoBehaviour
         bool shootHeld = fireInput.action.IsPressed();
         bool shootThisFrame = fireInput.action.WasPerformedThisFrame();
         // Check if nextFireTime is in between this FixedUpdate call and the next
-        if (nextFireTime <= Time.time + Time.deltaTime * 0.552f)
+        if (nextFireTime <= Time.time + Time.deltaTime * 0.552f && !gunAnimator.IsReloading())
         {
             if ((shootHeld && fireMode == FireMode.Auto) || (shootThisFrame && fireMode == FireMode.SemiAuto))
             {
@@ -112,6 +119,12 @@ public class RaycastShooting : MonoBehaviour
         {
             RaycastFire();
         }
+
+        gunAnimator.Fire();
+        audioPlayer.FireSound();
+        
+        Instantiate(muzzleFlash, attackPoint.position, attackPoint.rotation);
+
 
         playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
     }

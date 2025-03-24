@@ -15,6 +15,8 @@ public class Reloading : MonoBehaviour
 
     [HideInInspector] public bool reloading {private set; get;}
 
+    [SerializeField] AbstractGunAnimator gunAnimator;
+
     void Awake()
     {
         curMag = maxMagSize;
@@ -35,5 +37,7 @@ public class Reloading : MonoBehaviour
     void MagazineReload()
     {
         curMag = maxMagSize;
+
+        gunAnimator.Reload();
     }
 }
