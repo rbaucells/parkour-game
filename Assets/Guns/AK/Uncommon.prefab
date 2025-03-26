@@ -1168,8 +1168,8 @@ GameObject:
   - component: {fileID: 1669544806396434065}
   - component: {fileID: 7393729435966806288}
   - component: {fileID: 6381780860454230396}
-  - component: {fileID: 6740787268639980278}
   - component: {fileID: 2346605224525493587}
+  - component: {fileID: 2043757802710169310}
   m_Layer: 0
   m_Name: Uncommon
   m_TagString: Untagged
@@ -1242,7 +1242,7 @@ MonoBehaviour:
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
   impactParticleSystem: {fileID: 1892351807075712, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   muzzleFlash: {fileID: 1743301284569550, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
-  gunAnimator: {fileID: 6740787268639980278}
+  gunAnimator: {fileID: 2043757802710169310}
 --- !u!114 &6381780860454230396
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1255,26 +1255,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25052bec103340641857422478adc266, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  reloadType: 0
   maxMagSize: 50
   curMag: 0
-  gunAnimator: {fileID: 6740787268639980278}
---- !u!114 &6740787268639980278
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8008842410216370235}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f294dab5ad9c445e4bb8e09dcb089741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bolt: {fileID: 4085165972553236267}
-  magazineOrigin: {fileID: 5608357053244984908}
-  magazine: {fileID: 7713655683337490682}
-  recoilOrigin: {fileID: 2461230393298003323}
+  gunAnimator: {fileID: 2043757802710169310}
 --- !u!82 &2346605224525493587
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1371,6 +1354,22 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &2043757802710169310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8008842410216370235}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ca22ab2179d1448d9b00e3b5409b946, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bolt: {fileID: 4085165972553236267}
+  magazineOrigin: {fileID: 5608357053244984908}
+  magazine: {fileID: 7713655683337490682}
+  recoilOrigin: {fileID: 2461230393298003323}
 --- !u!1 &8619227276701507902
 GameObject:
   m_ObjectHideFlags: 0

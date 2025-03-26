@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NaughtyAttributes;
 using UnityEngine;
 
 public class GroundCheck : MonoBehaviour
@@ -22,8 +23,7 @@ public class GroundCheck : MonoBehaviour
     }
     [SerializeField] [Range(0, 100)] float gravityForce;
 
-    [SerializeField] int wallAngleMin = 85;
-    [SerializeField] int wallAngleMax = 95;
+    [SerializeField] [MinMaxSlider(75, 105)] Vector2 wallAngleRange = new Vector2(85, 95);
 
     [SerializeField] float groundSlamForce;
     
@@ -43,7 +43,7 @@ public class GroundCheck : MonoBehaviour
     Vector3 wallAttractionDirection;
     [SerializeField] float wallAttractionForce;
 
-    [Range(0,1)] public float gravityMultiplier;
+    [Range(0,1)] public float wallRunGravityMultipliers;
 
     CapsuleCollider col;
     Rigidbody rig;
@@ -113,7 +113,7 @@ public class GroundCheck : MonoBehaviour
                 Vector3 normal = contactPoint.normal;
                 float wallToGroundAngle = Vector3.Angle(normal, Vector3.up);
                 
-                if (wallToGroundAngle >= wallAngleMin && wallToGroundAngle <= wallAngleMax)
+                if (wallToGroundAngle >= wallAngleRange.x && wallToGroundAngle <= wallAngleRange.y)
                 {
                     // Get the dot product between the contact point normal and the Transforms directions
                     float dotForward = Vector3.Dot(normal, transform.forward);
@@ -172,7 +172,7 @@ public class GroundCheck : MonoBehaviour
                 Vector3 normal = contactPoint.normal;
                 float wallToGroundAngle = Vector3.Angle(normal, Vector3.up);
                 
-                if (wallToGroundAngle >= wallAngleMin && wallToGroundAngle <= wallAngleMax)
+                if (wallToGroundAngle >= wallAngleRange.x && wallToGroundAngle <= wallAngleRange.y)
                 {
                     // Get the dot product between the contact point normal and the Transforms directions
                     float dotForward = Vector3.Dot(normal, transform.forward);
@@ -229,7 +229,7 @@ public class GroundCheck : MonoBehaviour
         else if (groundState == GroundState.WallGrounded)
         {
             // Apply Gravity
-            rig.AddForce(-transform.up * gravityForce * gravityMultiplier, ForceMode.Acceleration);   
+            rig.AddForce(-transform.up * gravityForce * wallRunGravityMultipliers, ForceMode.Acceleration);   
             // Apply Wall Attraction Force
             rig.AddForce(wallAttractionDirection * wallAttractionForce, ForceMode.Acceleration);
         }

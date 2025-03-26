@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using NaughtyAttributes;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -25,10 +26,10 @@ public class Crouching : MonoBehaviour
     public SlamAction slamAction;
     [HideInInspector] public bool canSlam;
 
-    public float actionRadius;
-    public float actionForce;
+    [ShowIf(nameof(IsSlamActionExplodeOrImplode))] public float actionRadius;
+    [ShowIf(nameof(IsSlamActionExplodeOrImplode))] public float actionForce;
 
-    public  float explosionUpForce;
+    [ShowIf(nameof(IsSlamActionExplode))] public float explosionUpForce;
 
     CrouchState crouchState = CrouchState.Standing;
     GroundCheck groundCheckScript;
@@ -91,5 +92,16 @@ public class Crouching : MonoBehaviour
         crouchState = CrouchState.Standing;
         
         Debug.Log("Stop Crouch");
+    }
+
+    // Helper methods for NaughtyAttributes
+    private bool IsSlamActionExplodeOrImplode()
+    {
+        return slamAction == SlamAction.Explode || slamAction == SlamAction.Implode;
+    }
+
+    private bool IsSlamActionExplode()
+    {
+        return slamAction == SlamAction.Explode;
     }
 }

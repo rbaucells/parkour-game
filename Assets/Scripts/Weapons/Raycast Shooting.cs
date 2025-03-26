@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
@@ -28,8 +29,8 @@ public class RaycastShooting : MonoBehaviour
     [SerializeField] float trailSpeed;
 
     [SerializeField] float force;
-    [SerializeField] int numberOfBulletsInBurst = 0;
-    [SerializeField] float timeBetweenBursts;
+    [SerializeField] [ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
+    [SerializeField] [ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
     [SerializeField] float knockBackForce;
     bool bursting;
 
@@ -50,10 +51,11 @@ public class RaycastShooting : MonoBehaviour
     [SerializeField] GameObject impactParticleSystem;
     [SerializeField] GameObject muzzleFlash;
 
-    [SerializeField] AbstractGunAnimator gunAnimator;
+    AbstractGunAnimator gunAnimator;
 
     void Start()
     {
+        gunAnimator = GetComponent<AbstractGunAnimator>();
         timeBetweenShots = 60/fireRate;
         Debug.Log ("Time Between Shots: " + timeBetweenShots);
 
@@ -189,5 +191,11 @@ public class RaycastShooting : MonoBehaviour
         }
 
         Destroy(Trail.gameObject, Trail.time);
+    }
+
+    // Helper method for NaughtyAttributes
+    private bool IsBurstMode()
+    {
+        return fireMode == FireMode.AutoBurst || fireMode == FireMode.SemiBurst;
     }
 }

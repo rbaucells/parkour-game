@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,8 +17,7 @@ public class Aiming : MonoBehaviour
 
     float lookSenseToUse; // Depends on inputType
 
-    [SerializeField] [Range(0, 180)] float maxX;
-    [SerializeField] [Range(-180, 0)] float minX;
+    [SerializeField] [MinMaxSlider(-180, 180)] Vector2 lookXRange; // X Rotation Range
 
     [SerializeField] Transform cameraContainer;
 
@@ -54,7 +54,7 @@ public class Aiming : MonoBehaviour
         curCameraX += deltaMouseValue.y * lookSenseToUse;
 
         // Clamp it to MinMax
-        curCameraX = Mathf.Clamp(curCameraX, minX, maxX);
+        curCameraX = Mathf.Clamp(curCameraX, lookXRange.x, lookXRange.y);
 
         // Rotate CameraContainer Up/Down
         cameraContainer.localEulerAngles = new Vector3(-curCameraX, 0, 0);

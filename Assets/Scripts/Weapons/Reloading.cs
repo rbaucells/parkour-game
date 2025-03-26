@@ -4,40 +4,25 @@ using UnityEngine;
 
 public class Reloading : MonoBehaviour
 {
-    public enum ReloadType
-    {
-        Magazine,
-        Repeating
-    }
-    [SerializeField] ReloadType reloadType;
-    [SerializeField] int maxMagSize;
+    public int maxMagSize;
     public int curMag;
 
     [HideInInspector] public bool reloading {private set; get;}
 
-    [SerializeField] AbstractGunAnimator gunAnimator;
+    AbstractGunAnimator gunAnimator;
 
     void Awake()
     {
         curMag = maxMagSize;
     }
-    
-    public void Reload()
+
+    void Start()
     {
-        switch (reloadType)
-        {
-            case ReloadType.Magazine:
-                MagazineReload();
-                break;
-            case ReloadType.Repeating:
-                break;
-        }
+        gunAnimator = GetComponent<AbstractGunAnimator>();
     }
 
-    void MagazineReload()
+    public void Reload()
     {
-        curMag = maxMagSize;
-
         gunAnimator.Reload();
     }
 }

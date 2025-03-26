@@ -836,8 +836,8 @@ GameObject:
   - component: {fileID: 3144517951271917587}
   - component: {fileID: 6160566010508116123}
   - component: {fileID: 5199825535964447376}
-  - component: {fileID: 5595074384667888117}
   - component: {fileID: 4990212408263307140}
+  - component: {fileID: 7634495172716417463}
   m_Layer: 0
   m_Name: Rare
   m_TagString: Untagged
@@ -910,7 +910,7 @@ MonoBehaviour:
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
   impactParticleSystem: {fileID: 1892351807075712, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   muzzleFlash: {fileID: 1743301284569550, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
-  gunAnimator: {fileID: 5595074384667888117}
+  gunAnimator: {fileID: 7634495172716417463}
 --- !u!114 &5199825535964447376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -923,26 +923,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25052bec103340641857422478adc266, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  reloadType: 0
   maxMagSize: 75
   curMag: 0
-  gunAnimator: {fileID: 5595074384667888117}
---- !u!114 &5595074384667888117
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5436231140495645359}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d03f79b84b084beabffea3b83d69dc6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bolt: {fileID: 9207649549489734055}
-  magazineOrigin: {fileID: 3955979880318522510}
-  magazine: {fileID: 2383616629788913722}
-  recoilOrigin: {fileID: 4316668601678368783}
+  gunAnimator: {fileID: 7634495172716417463}
 --- !u!82 &4990212408263307140
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1039,6 +1022,22 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &7634495172716417463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5436231140495645359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77fcd4f4086d343a28f5688b779a182a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bolt: {fileID: 9207649549489734055}
+  magazineOrigin: {fileID: 3955979880318522510}
+  magazine: {fileID: 2383616629788913722}
+  recoilOrigin: {fileID: 4316668601678368783}
 --- !u!1 &5770164641932489329
 GameObject:
   m_ObjectHideFlags: 0

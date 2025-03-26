@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using NaughtyAttributes;
 
 public class ProjectileShooting : MonoBehaviour
 {
@@ -23,8 +24,8 @@ public class ProjectileShooting : MonoBehaviour
 
     [SerializeField] float bulletForce;
 
-    [SerializeField] int numberOfBulletsInBurst = 0;
-    [SerializeField] float timeBetweenBursts;
+    [SerializeField] [ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
+    [SerializeField] [ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
 
     [SerializeField] float knockBackForce;
 
@@ -44,11 +45,12 @@ public class ProjectileShooting : MonoBehaviour
     Audio audioPlayer;
     Rigidbody playerRig;
 
-    [SerializeField] AbstractGunAnimator gunAnimator;
+    AbstractGunAnimator gunAnimator;
     [SerializeField] GameObject bullet;
 
     void Start()
     {
+        gunAnimator = GetComponent<AbstractGunAnimator>();
         timeBetweenShots = 60/fireRate;
         Debug.Log ("Time Between Shots: " + timeBetweenShots);
 
@@ -153,5 +155,11 @@ public class ProjectileShooting : MonoBehaviour
         {
             return preRay.GetPoint(75);
         }
+    }
+
+    // Helper method for NaughtyAttributes
+    private bool IsBurstMode()
+    {
+        return fireMode == FireMode.AutoBurst || fireMode == FireMode.SemiBurst;
     }
 }
