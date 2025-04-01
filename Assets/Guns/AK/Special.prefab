@@ -965,7 +965,7 @@ GameObject:
   - component: {fileID: 1007096790045146722}
   - component: {fileID: 7187513118874541292}
   - component: {fileID: 2360319976250863371}
-  - component: {fileID: 1047659561024531388}
+  - component: {fileID: 8912304166706938193}
   m_Layer: 0
   m_Name: Special
   m_TagString: Untagged
@@ -1023,7 +1023,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxMagSize: 30
   curMag: 0
-  gunAnimator: {fileID: 1047659561024531388}
 --- !u!114 &7187513118874541292
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1054,7 +1053,6 @@ MonoBehaviour:
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
   impactParticleSystem: {fileID: 1892351807075712, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   muzzleFlash: {fileID: 1743301284569550, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
-  gunAnimator: {fileID: 1047659561024531388}
 --- !u!82 &2360319976250863371
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1151,7 +1149,7 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!114 &1047659561024531388
+--- !u!114 &8912304166706938193
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

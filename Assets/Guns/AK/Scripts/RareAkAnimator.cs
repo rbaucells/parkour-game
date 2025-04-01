@@ -35,7 +35,7 @@ public class RareAkAnimator: AbstractGunAnimator
             })
 
             .Append(magazineOrigin.DOLocalRotate(new Vector3(0, -90, 20), 0.3f)) // Rotate Out a Little
-            .AppendCallback(audioPlayer.PlaySound1)
+            .AppendCallback(() => audioPlayer.PlaySound1())
             .InsertCallback(0.3f,() => 
             {
                 magRig.isKinematic = false; // Turn on Physics
@@ -57,14 +57,14 @@ public class RareAkAnimator: AbstractGunAnimator
             .AppendInterval(0.1f) // Delay
             .Append(magMat.DOFade(1.0f, 0.3f)) // Fade into Visible
             .Append(magazineOrigin.DOLocalMove(new Vector3(0, 0.35f, 1.17f), 0.35f)) // Move back to Final Pos
-            .AppendCallback(audioPlayer.PlaySound2)
+            .AppendCallback(() => audioPlayer.PlaySound2())
             .Append(magazineOrigin.DOLocalRotate(new Vector3(0, -90, 0), 0.2f)) // Rotate back to Final Rot
             .AppendCallback(() => reloading.curMag = reloading.maxMagSize)
             .AppendInterval(0.15f) // Delay
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt
-            .AppendCallback(audioPlayer.PlaySound3)
+            .AppendCallback(() => audioPlayer.PlaySound3())
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 0.94f), 0.2f)) // Move Bolt
-            .AppendCallback(audioPlayer.PlaySound4)
+            .AppendCallback(() => audioPlayer.PlaySound4())
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 1.21f), 0.2f)) // Move Bolt
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,0f), 0.2f)); // Rotate back to normal
 

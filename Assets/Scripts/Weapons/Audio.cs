@@ -1,10 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
 public class Audio : MonoBehaviour
 {
+    [SerializeField] float shootPitchVariation = 0.1f; // Pitch variation range
+    [SerializeField] float shootVolumeVariation = 0.1f; // Volume variation range
     [SerializeField] AudioClip fireSound;
     [SerializeField] AudioClip customSound1;
     [SerializeField] AudioClip customSound2;
@@ -23,41 +27,71 @@ public class Audio : MonoBehaviour
 
     public void FireSound()
     {
+        float originalPitch = audioSource.pitch; // Save the original pitch
+        float originalVolume = audioSource.volume; // Save the original volume
+
+        // Randomize pitch and volume
+        audioSource.pitch = Random.Range(1f - shootPitchVariation, 1f + shootPitchVariation);
+        audioSource.volume = Random.Range(1f - shootVolumeVariation, 1f + shootVolumeVariation);
+
+        // Play the fire sound
         audioSource.PlayOneShot(fireSound);
-    }
-    public void PlaySound1()
-    {
-        Debug.Log("PlaySound1");
-        audioSource.PlayOneShot(customSound1);
+
+        // Reset pitch and volume to their original values
+        audioSource.pitch = originalPitch;
+        audioSource.volume = originalVolume;
     }
 
-    public void PlaySound2()
+    public void PlaySound1([Optional] float delay)
     {
-        audioSource.PlayOneShot(customSound2);
+        PlaySoundWithDelay(customSound1, delay);
     }
 
-    public void PlaySound3()
+    public void PlaySound2([Optional] float delay)
     {
-        audioSource.PlayOneShot(customSound3);
+        PlaySoundWithDelay(customSound2, delay);
     }
 
-    public void PlaySound4()
+    public void PlaySound3([Optional] float delay )
     {
-        audioSource.PlayOneShot(customSound4);
+        PlaySoundWithDelay(customSound3, delay);
     }
 
-    public void PlaySound5()
+    public void PlaySound4([Optional] float delay)
     {
-        audioSource.PlayOneShot(customSound5);
+        PlaySoundWithDelay(customSound4, delay);
     }
 
-    public void PlaySound6()
+    public void PlaySound5([Optional] float delay)
     {
-        audioSource.PlayOneShot(customSound6);
+        PlaySoundWithDelay(customSound5, delay);
     }
 
-    public void PlaySound7()
+    public void PlaySound6([Optional]float delay)
     {
-        audioSource.PlayOneShot(customSound7);
+        PlaySoundWithDelay(customSound6, delay);
+    }
+
+    public void PlaySound7([Optional] float delay)
+    {
+        PlaySoundWithDelay(customSound7, delay);
+    }
+
+    private void PlaySoundWithDelay(AudioClip clip, float delay)
+    {
+        if (delay <= 0f )
+        {
+            audioSource.PlayOneShot(clip);
+        }
+        else
+        {
+            StartCoroutine(PlaySoundAfterDelay(clip, delay));
+        }
+    }
+
+    private IEnumerator PlaySoundAfterDelay(AudioClip clip, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        audioSource.PlayOneShot(clip);
     }
 }

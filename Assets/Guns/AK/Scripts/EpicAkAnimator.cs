@@ -37,9 +37,9 @@ public class EpicAkAnimator : AbstractGunAnimator
             .AppendInterval(0.065f * reloading.maxMagSize)
             .Append(bulletFlapThingy.DOLocalRotate(new Vector3(0, 0f, 0f), 0.2f))
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt
-            .AppendCallback(audioPlayer.PlaySound1)
+            .AppendCallback(() => audioPlayer.PlaySound1())
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 0.94f), 0.2f)) // Move Bolt
-            .AppendCallback(audioPlayer.PlaySound2)
+            .AppendCallback(() => audioPlayer.PlaySound2())
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 1.21f), 0.2f)) // Move Bolt
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,0f), 0.2f)); // Rotate back to normal
 
