@@ -263,6 +263,7 @@ GameObject:
   - component: {fileID: 6906823965907466858}
   - component: {fileID: 5847801258062228681}
   - component: {fileID: 1881594576738244002}
+  - component: {fileID: 1642448893006342988}
   m_Layer: 0
   m_Name: Common
   m_TagString: Untagged
@@ -298,11 +299,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f1dfaa34531c4f44ab0ddde85b049bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fireSound: {fileID: 8300000, guid: 11058ba6ceec44fc4a9221efe89f874e, type: 3}
-  customSound1: {fileID: 8300000, guid: 461d55f5be363493fb28ccc52a30f3a8, type: 3}
-  customSound2: {fileID: 8300000, guid: 5afba53756c30402e80ae084bef1ae64, type: 3}
+  shootPitchVariation: 0.2
+  shootVolumeVariation: 0.5
+  fireSound: {fileID: 8300000, guid: 425e43ab060f14e6592c6f7dcbb3cfd9, type: 3}
+  customSound1: {fileID: 8300000, guid: cded56747be194a268f23aec11fa94b6, type: 3}
+  customSound2: {fileID: 8300000, guid: ad6ef41e70a4e4a22ac5ef478cb93b13, type: 3}
   customSound3: {fileID: 8300000, guid: 3274791cd03b2419ea460b2d68dca2ff, type: 3}
-  customSound4: {fileID: 8300000, guid: 08e30064b0d0d459ea2adb8b749e6a33, type: 3}
+  customSound4: {fileID: 8300000, guid: d81baa38c9450f84a8cdf045c5e27d11, type: 3}
   customSound5: {fileID: 0}
   customSound6: {fileID: 0}
   customSound7: {fileID: 0}
@@ -335,7 +338,6 @@ MonoBehaviour:
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
   impactParticleSystem: {fileID: 1892351807075712, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   muzzleFlash: {fileID: 1743301284569550, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
-  gunAnimator: {fileID: 1881594576738244002}
 --- !u!114 &6906823965907466858
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -350,7 +352,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxMagSize: 30
   curMag: 0
-  gunAnimator: {fileID: 1881594576738244002}
 --- !u!82 &5847801258062228681
 AudioSource:
   m_ObjectHideFlags: 0
@@ -463,6 +464,23 @@ MonoBehaviour:
   magazineOrigin: {fileID: 6913268329380813452}
   magazine: {fileID: 83877797091828538}
   recoilOrigin: {fileID: 4109325060929627475}
+--- !u!114 &1642448893006342988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1205115937268244165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 723629d5ac0fc4ac0b52abce9ddbaa17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  screenPositions:
+  - {x: 1, y: -0.55, z: 0.95}
+  - {x: -1, y: -0.55, z: 0.95}
+  - {x: -1, y: 0.55, z: 0.95}
+  - {x: 1, y: 0.55, z: 0.95}
 --- !u!1 &1640051512263760178
 GameObject:
   m_ObjectHideFlags: 0

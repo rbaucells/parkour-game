@@ -58,8 +58,8 @@ public class CommonAKAnimator: AbstractGunAnimator
             .AppendInterval(0.1f) // Delay
             .Append(magMat.DOFade(1.0f, 0.3f)) // Fade into Visible
             .Append(magazineOrigin.DOLocalMove(new Vector3(0, 0.33f, 1.17f), 0.35f)) // Move back to Final Pos
-            .JoinCallback(() => audioPlayer.PlaySound2())
             .Append(magazineOrigin.DOLocalRotate(new Vector3(0, -90, 0), 0.2f)) // Rotate back to Final Rot
+            .JoinCallback(() => audioPlayer.PlaySound2())
             .AppendCallback(() => reloading.curMag = reloading.maxMagSize)
             .AppendInterval(0.3f) // Delay
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt

@@ -22,40 +22,36 @@ public class CommonA12Animator : AbstractGunAnimator
         reloadSequence = DOTween.Sequence();
 
         fireSequence
-            .Append(recoilOrigin.DOLocalRotate(new Vector3(-15f, 0.0f, 0.0f), 0.07f))
+            .Append(recoilOrigin.DOLocalRotate(new Vector3(-15f, 0f, 0.0f), 0.07f))
             .Join(recoilOrigin.DOLocalMove(new Vector3(0.0f,-0.5f, -1.4f), 0.05f))
-            .Join(bolt.DOLocalMove(new Vector3(0.03f, 0.4f, 0.805f), 0.03f))
-            .Append(bolt.DOLocalMove(new Vector3(0.03f, 0.4f, 1.13f), 0.03f))
+            .Join(bolt.DOLocalMove(new Vector3(0.03f, 0.53f, 1.1f), 0.03f))
+            .Append(bolt.DOLocalMove(new Vector3(0.03f, 0.53f, 1.418f), 0.03f))
             .Join(recoilOrigin.DOLocalRotate(new Vector3(0.0f, 0.0f, 0.0f), 0.25f))
             .Join(recoilOrigin.DOLocalMove(new Vector3(0f, -0.5f, -1.3f), 0.2f));
 
         reloadSequence
             .AppendCallback(() =>
             {
-                magazineOrigin.localPosition = new Vector3(0, 0.37f, 1.2539f); // Set Starting Pos
-                magazineOrigin.localRotation = Quaternion.Euler(-3.703f, 0, 0); // Set Starting Rot
+                magazineOrigin.localPosition = new Vector3(0, 0.384f, 1.101f); // Set Starting Pos
+                magazineOrigin.localRotation = Quaternion.Euler(-3.55f, 0, 0); // Set Starting Rot
             })
             .AppendCallback(() => audioPlayer.PlaySound1())
-            .AppendCallback(() => magazineOrigin.GetComponent<Rigidbody>().isKinematic = false)
-            .Append(magazineOrigin.GetComponentInChildren<Renderer>().material.DOFade(0.0f, 0.6f)) // Fade into Invisible
-            .AppendCallback(() => {
-                magazineOrigin.GetComponent<Rigidbody>().velocity = Vector3.zero; // No More Velocity
-                magazineOrigin.GetComponent<Rigidbody>().angularVelocity = Vector3.zero; // No More Angular Velocity
-                magazineOrigin.GetComponent<Rigidbody>().isKinematic = true;
-                magazineOrigin.localPosition = new Vector3(0,-0.85f,1.33f);
-                magazineOrigin.localRotation = Quaternion.Euler(-3.703f, 0, 0);
-            })
+            .Append(magazineOrigin.GetComponentInChildren<Renderer>().material.DOFade(0.0f, 0.3f)) // Fade into Invisible
+            .Join(magazineOrigin.DOLocalMove(new Vector3(0, -0.683f, 1.167f), 0.2f)) // Move to the right position
+            .Join(recoilOrigin.DOPunchRotation(new Vector3(-2f, 0f, 0f), 0.2f, 10, 1.0f)) // Punch recoil to simulate magazine ejection
+            .AppendCallback(() => magazineOrigin.localPosition = new Vector3(0, -0.554f, 1.25f))
             .Append(magazineOrigin.GetComponentInChildren<Renderer>().material.DOFade(1.0f, 0.3f))
-            .Append(magazineOrigin.DOLocalMove(new Vector3(0, 0.37f, 1.2539f), 0.45f))
+            .Append(magazineOrigin.DOLocalMove(new Vector3(0, 0.384f, 1.101f), 0.2f))
             .JoinCallback(() => audioPlayer.PlaySound2())
-            .AppendCallback(() => reloading.curMag = reloading.maxMagSize)
-            .Append(recoilOrigin.DOLocalRotate(new Vector3(0f, 0f, 45f), 0.4f))
-            .AppendCallback(() => audioPlayer.PlaySound3())
-            .Append(bolt.DOLocalMove(new Vector3(0.03f, 0.4f, 0.805f), 0.17f))
-            .AppendInterval(0.07f)
-            .AppendCallback(() => audioPlayer.PlaySound4())
-            .Append(bolt.DOLocalMove(new Vector3(0.03f, 0.4f, 1.13f), 0.1f))
-            .Append(recoilOrigin.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.35f));
+            .Append(recoilOrigin.DOPunchRotation(new Vector3(-2f, 0f, 0f), 0.2f, 10, 1.0f)) // Punch recoil to simulate magazine ejection
+            .JoinCallback(() => reloading.curMag = reloading.maxMagSize)
+            .Append(recoilOrigin.DOLocalRotate(new Vector3(0f, 0f, 65f), 0.25f))
+            .Append(bolt.DOLocalMove(new Vector3(0.03f, 0.53f, 1.1f), 0.17f))
+            .JoinCallback(() => audioPlayer.PlaySound3())
+            .AppendInterval(0.2f)
+            .Append(bolt.DOLocalMove(new Vector3(0.03f, 0.53f, 1.418f), 0.17f))
+            .JoinCallback(() => audioPlayer.PlaySound4())
+            .Append(recoilOrigin.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.3f));
     }
     public override void Fire()
     {

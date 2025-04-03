@@ -18,6 +18,8 @@ public class RareAkAnimator: AbstractGunAnimator
     Sequence fireSequence;
     void Start()
     {
+        reloading = GetComponent<Reloading>();
+        
         magRig = magazineOrigin.GetComponent<Rigidbody>();
 
         audioPlayer = GetComponent<Audio>();

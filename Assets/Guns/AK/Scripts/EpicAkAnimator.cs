@@ -34,7 +34,7 @@ public class EpicAkAnimator : AbstractGunAnimator
         reloadSequence
             .AppendCallback(() => StartCoroutine(SpawnBullets())) // Spawn bullets
             .Append(bulletFlapThingy.DOLocalRotate(new Vector3(-70f, 0f, 0f), 0.2f))
-            .AppendInterval(0.065f * reloading.maxMagSize)
+            .AppendInterval(0.057f * reloading.maxMagSize)
             .Append(bulletFlapThingy.DOLocalRotate(new Vector3(0, 0f, 0f), 0.2f))
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt
             .AppendCallback(() => audioPlayer.PlaySound1())

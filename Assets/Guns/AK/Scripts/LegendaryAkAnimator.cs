@@ -32,7 +32,7 @@ public class LegendaryAkAnimator : AbstractGunAnimator
 
         reloadSequence
             .AppendCallback(() => StartCoroutine(SpawnBullets())) // Spawn bullets
-            .AppendInterval(0.115f * reloading.maxMagSize)
+            .AppendInterval(0.1065f * reloading.maxMagSize)
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt
             .AppendCallback(() => audioPlayer.PlaySound1())
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 0.94f), 0.2f)) // Move Bolt

@@ -927,7 +927,6 @@ MonoBehaviour:
   bulletTrail: {fileID: 647026643702128017, guid: 496c9d1a0dd0c497ca4cd1be6850db39, type: 3}
   impactParticleSystem: {fileID: 1892351807075712, guid: 89c33602d4a554358af318142b4c080f, type: 3}
   muzzleFlash: {fileID: 1743301284569550, guid: 73afb2c75165f4eac8a26d6d83c84171, type: 3}
-  gunAnimator: {fileID: 6882110645958558812}
 --- !u!114 &9016780449076574751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -942,7 +941,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxMagSize: 200
   curMag: 0
-  gunAnimator: {fileID: 6882110645958558812}
 --- !u!82 &8651881624577442016
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1051,9 +1049,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f1dfaa34531c4f44ab0ddde85b049bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fireSound: {fileID: 8300000, guid: 11058ba6ceec44fc4a9221efe89f874e, type: 3}
+  shootPitchVariation: 0.1
+  shootVolumeVariation: 0.1
+  fireSound: {fileID: 8300000, guid: 425e43ab060f14e6592c6f7dcbb3cfd9, type: 3}
   customSound1: {fileID: 8300000, guid: 3274791cd03b2419ea460b2d68dca2ff, type: 3}
-  customSound2: {fileID: 8300000, guid: 08e30064b0d0d459ea2adb8b749e6a33, type: 3}
+  customSound2: {fileID: 8300000, guid: d81baa38c9450f84a8cdf045c5e27d11, type: 3}
   customSound3: {fileID: 8300000, guid: 86130bf30d7fe4d0da5584d2e0863f0a, type: 3}
   customSound4: {fileID: 0}
   customSound5: {fileID: 0}
