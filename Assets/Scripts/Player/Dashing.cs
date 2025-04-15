@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 
 public class Dashing : MonoBehaviour
 {
+    AnimationController animController;
     Movement movementScript;
     
     [SerializeField] float dashDelay = 1;
@@ -18,6 +19,7 @@ public class Dashing : MonoBehaviour
 
     void Awake()
     {
+        animController = GetComponent<AnimationController>();
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
         // Get Movement Script Reference
@@ -39,27 +41,35 @@ public class Dashing : MonoBehaviour
         {
             case Movement.MoveDirection.Forward:
                 rig.AddForce(cameraContainer.forward * dashForce, ForceMode.Impulse);
+                animController.DashForward();
                 break;
             case Movement.MoveDirection.ForwardRight:
                 rig.AddForce((cameraContainer.forward + cameraContainer.right) * dashForce, ForceMode.Impulse);
+                animController.DashForwardRight();
                 break;
             case Movement.MoveDirection.Right:
                 rig.AddForce(transform.right * dashForce, ForceMode.Impulse);
+                animController.DashRight();
                 break;
             case Movement.MoveDirection.BackRight:
                 rig.AddForce((-cameraContainer.forward + cameraContainer.right) * dashForce, ForceMode.Impulse);
+                animController.DashBackLeft();
                 break;
             case Movement.MoveDirection.Back:
                 rig.AddForce(-cameraContainer.forward * dashForce, ForceMode.Impulse);
+                animController.DashBack();
                 break;
             case Movement.MoveDirection.BackLeft:
                 rig.AddForce((-cameraContainer.forward + -cameraContainer.right) * dashForce, ForceMode.Impulse);
+                animController.DashBackLeft();
                 break;
             case Movement.MoveDirection.Left:
                 rig.AddForce(-cameraContainer.right * dashForce, ForceMode.Impulse);
+                animController.DashLeft();
                 break;
             case Movement.MoveDirection.ForwardLeft:
                 rig.AddForce((cameraContainer.forward + -cameraContainer.right) * dashForce, ForceMode.Impulse);
+                animController.DashForwardLeft();
                 break;
         }
 

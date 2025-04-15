@@ -838,6 +838,7 @@ GameObject:
   - component: {fileID: 5199825535964447376}
   - component: {fileID: 4990212408263307140}
   - component: {fileID: 7634495172716417463}
+  - component: {fileID: -5124504208088453702}
   m_Layer: 0
   m_Name: Rare
   m_TagString: Untagged
@@ -854,7 +855,7 @@ Transform:
   m_GameObject: {fileID: 5436231140495645359}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.876, y: -0.507, z: 0.897}
+  m_LocalPosition: {x: 1, y: -0.55, z: 0.95}
   m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1038,6 +1039,23 @@ MonoBehaviour:
   magazineOrigin: {fileID: 3955979880318522510}
   magazine: {fileID: 2383616629788913722}
   recoilOrigin: {fileID: 4316668601678368783}
+--- !u!114 &-5124504208088453702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5436231140495645359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 723629d5ac0fc4ac0b52abce9ddbaa17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  screenPositions:
+  - {x: 1, y: -0.55, z: 0.95}
+  - {x: -1, y: -0.55, z: 0.95}
+  - {x: -1, y: 0.55, z: 0.95}
+  - {x: 1, y: 0.55, z: 0.95}
 --- !u!1 &5770164641932489329
 GameObject:
   m_ObjectHideFlags: 0

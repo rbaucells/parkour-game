@@ -33,10 +33,12 @@ public class Crouching : MonoBehaviour
 
     CrouchState crouchState = CrouchState.Standing;
     GroundCheck groundCheckScript;
+    AnimationController animController;
     Rigidbody rig;
     
     void Awake()
     {
+        animController = GetComponent<AnimationController>();
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
         // Get GroundCheck Script Reference
@@ -72,6 +74,8 @@ public class Crouching : MonoBehaviour
         crouchState = CrouchState.Crouched;
 
         Debug.Log("Start Crouch");
+
+        animController.Crouch();
     }
 
     void WhileCrouch() // Called while crouch input is pressed [FixedUpdate]
@@ -92,6 +96,8 @@ public class Crouching : MonoBehaviour
         crouchState = CrouchState.Standing;
         
         Debug.Log("Stop Crouch");
+
+        animController.UnCrouch();
     }
 
     // Helper methods for NaughtyAttributes

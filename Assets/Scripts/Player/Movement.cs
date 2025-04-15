@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 
 public class Movement : MonoBehaviour
 {
+    AnimationController animController;
     public enum MoveState
     {
         Idle,
@@ -40,6 +41,7 @@ public class Movement : MonoBehaviour
 
     void Awake()
     {
+        animController = GetComponent<AnimationController>();
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
         // Get Ground Check Reference
@@ -90,7 +92,7 @@ public class Movement : MonoBehaviour
     void StartMoving()
     {
         // Start looping move anim
-        Debug.Log("Start Moving");
+        animController.StartWalk();
     }
 
     void WhileMoving()
@@ -104,20 +106,14 @@ public class Movement : MonoBehaviour
             if (moveInputValue.x > MOVE_THRESHOLD)
             {
                 moveDirection = MoveDirection.ForwardRight;
-
-                Debug.Log("Forward Right");
             }
             else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
                 moveDirection = MoveDirection.ForwardLeft;
-
-                Debug.Log("Forward Left");
             }
             else
             {
                 moveDirection = MoveDirection.Forward;
-
-                Debug.Log("Forward");
             }
         }
         else if (moveInputValue.y < -MOVE_THRESHOLD)
@@ -125,20 +121,14 @@ public class Movement : MonoBehaviour
             if (moveInputValue.x > MOVE_THRESHOLD)
             {
                 moveDirection = MoveDirection.BackRight;
-
-                Debug.Log("Back Right");
             }
             else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
                 moveDirection = MoveDirection.BackLeft;
-
-                Debug.Log("Back Left");
             }
             else
             {
                 moveDirection = MoveDirection.Back;
-
-                Debug.Log("Back");
             }
         }
         else
@@ -146,24 +136,20 @@ public class Movement : MonoBehaviour
             if (moveInputValue.x > MOVE_THRESHOLD)
             {
                 moveDirection = MoveDirection.Right;
-
-                Debug.Log("Right");
             }
             else if (moveInputValue.x < -MOVE_THRESHOLD)
             {
                 moveDirection = MoveDirection.Left;
-
-                Debug.Log("Left");
             }
         }
 
-        Debug.Log("While Moving");
     }
 
     void StopMoving()
     {
         // Stop looping move anim and transition to idle
-        Debug.Log("Stop Moving");
+
+        animController.StopWalk();
 
         moveDirection = MoveDirection.None;
     }

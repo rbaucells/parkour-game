@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class GroundCheck : MonoBehaviour
 {
+    AnimationController animController;
     public enum GroundState
     {
         Grounded,
@@ -34,14 +35,12 @@ public class GroundCheck : MonoBehaviour
 
     Crouching crouchingScript;
     Jumping jumpingScript;
+    Movement movementScript;
 
     ISet<Collider> groundColliders = new HashSet<Collider>();
     ISet<Collider> wallColliders = new HashSet<Collider>();
 
     const float GROUND_TOLERANCE = 0.3f;
-
-    Vector3 wallAttractionDirection;
-    [SerializeField] float wallAttractionForce;
 
     [Range(0,1)] public float wallRunGravityMultipliers;
 
@@ -50,6 +49,7 @@ public class GroundCheck : MonoBehaviour
 
     void Awake()
     {
+        animController = GetComponent<AnimationController>();
         // Get Collider Reference
         col = GetComponent<CapsuleCollider>();
         // Get Rigidbody Reference
@@ -58,6 +58,7 @@ public class GroundCheck : MonoBehaviour
         crouchingScript = GetComponent<Crouching>();
         // Get Jumping Script Reference
         jumpingScript = GetComponent<Jumping>();
+        movementScript = GetComponent<Movement>();
     }
 
     void FixedUpdate()
@@ -185,38 +186,28 @@ public class GroundCheck : MonoBehaviour
                         wallColliders.Add(other.collider);
 
                         wallState = WallState.Back;
-
-                        wallAttractionDirection = -normal;
                     }
                     else if (dotRight > 0.5f)
                     {
                         wallColliders.Add(other.collider);
 
                         wallState = WallState.Left;
-
-                        wallAttractionDirection = -normal;
                     }
                     else if (dotBack > 0.5f)
                     {
                         wallColliders.Add(other.collider);
 
                         wallState = WallState.Front;
-
-                        wallAttractionDirection = -normal;
                     }
                     else if (dotLeft > 0.5f)
                     {
                         wallColliders.Add(other.collider);
 
                         wallState = WallState.Right;
-
-                        wallAttractionDirection = -normal;
                     }
                     else
                     {
                         wallState = WallState.None;
-
-                        wallAttractionDirection = Vector3.zero;
                     }
                 }
             }
@@ -230,15 +221,13 @@ public class GroundCheck : MonoBehaviour
         {
             // Apply Gravity
             rig.AddForce(-transform.up * gravityForce * wallRunGravityMultipliers, ForceMode.Acceleration);   
-            // Apply Wall Attraction Force
-            rig.AddForce(wallAttractionDirection * wallAttractionForce, ForceMode.Acceleration);
         }
     }
 
     void OnCollisionExit(Collision other)
     {
         // Remove the collider from the grounded colliders
-        groundColliders.Remove(other.collider);
+        groundColliders.Clear();
 
         bool curGrounded = groundColliders.Any();
 
@@ -249,7 +238,7 @@ public class GroundCheck : MonoBehaviour
         }
 
         // Remove the collider from the wall colliders
-        wallColliders.Remove(other.collider);
+        wallColliders.Clear();
 
         bool curWallGrounded = wallColliders.Any();
 
@@ -269,8 +258,6 @@ public class GroundCheck : MonoBehaviour
             // Apply ground slam force
             rig.AddForce(other.GetContact(0).normal * groundSlamForce, ForceMode.Impulse);
 
-            Debug.Log("Ground Slam");
-
             crouchingScript.canSlam = false;
 
             switch (crouchingScript.slamAction)
@@ -282,6 +269,41 @@ public class GroundCheck : MonoBehaviour
                     Boom.Implode(other.GetContact(0).point, crouchingScript.actionRadius, crouchingScript.actionForce);
                     break;
             }
+
+            switch(movementScript.moveDirection)
+            {
+                case Movement.MoveDirection.Forward:
+                    animController.GroundSlamMiddle(other.relativeVelocity.y);
+                    break;
+                case Movement.MoveDirection.Back:
+                    animController.GroundSlamMiddle(other.relativeVelocity.y);
+                    break;
+                case Movement.MoveDirection.Right:
+                    animController.GroundSlamRight(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    break;
+                case Movement.MoveDirection.ForwardRight:
+                    animController.GroundSlamRight(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    break;
+                case Movement.MoveDirection.BackRight:
+                    animController.GroundSlamRight(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    break;
+                case Movement.MoveDirection.Left:
+                    animController.GroundSlamLeft(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    break;
+                case Movement.MoveDirection.ForwardLeft:
+                    animController.GroundSlamLeft(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    break;
+                case Movement.MoveDirection.BackLeft:
+                    animController.GroundSlamLeft(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    break;
+                case Movement.MoveDirection.None:
+                    animController.GroundSlamMiddle(other.relativeVelocity.y);
+                    break;
+            }
+        }
+        else
+        {
+            animController.Land(other.relativeVelocity.y);
         }
 
         if (jumpingScript.jumpHeld)
@@ -311,20 +333,23 @@ public class GroundCheck : MonoBehaviour
     void AirborneToWallGrounded()
     {
         groundState = GroundState.WallGrounded;
-
         switch (wallState)
         {
             case WallState.Right:
-                Debug.Log("Enter Right");
+                // Debug.Log("Enter Right");
+                animController.WallRunRightIn();
                 break;
             case WallState.Left:
-                Debug.Log("Enter Left");
+                // Debug.Log("Enter Left");
+                animController.WallRunLeftIn();
                 break;
             case WallState.Front:
-                Debug.Log("Enter Front");
+                // Debug.Log("Enter Front");
+                animController.WallRunFrontIn();
                 break;
             case WallState.Back:
-                Debug.Log("Enter Back");
+                // Debug.Log("Enter Back");
+                animController.WallRunBackIn();
                 break;
         }
 
@@ -335,22 +360,23 @@ public class GroundCheck : MonoBehaviour
     void WallGroundedToAirborne()
     {
         groundState = GroundState.Airborne;
+        // switch (wallState)
+        // {
+        //     case WallState.Right:
+        //         Debug.Log("Exit Right");
+        //         break;
+        //     case WallState.Left:
+        //         Debug.Log("Exit Left");
+        //         break;
+        //     case WallState.Front:
+        //         Debug.Log("Exit Front");
+        //         break;
+        //     case WallState.Back:
+        //         Debug.Log("Exit Back");
+        //         break;
+        // }
 
-        switch (wallState)
-        {
-            case WallState.Right:
-                Debug.Log("Exit Right");
-                break;
-            case WallState.Left:
-                Debug.Log("Exit Left");
-                break;
-            case WallState.Front:
-                Debug.Log("Exit Front");
-                break;
-            case WallState.Back:
-                Debug.Log("Exit Back");
-                break;
-        }
+        animController.WallRunOut();
 
         wallState = WallState.None;
 

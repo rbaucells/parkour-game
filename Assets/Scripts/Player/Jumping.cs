@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class Jumping : MonoBehaviour
 {
-    
+    AnimationController animController;
     [HideInInspector] public bool jumpHeld;
     [SerializeField] float jumpForce;
     GroundCheck groundCheckScript;
@@ -21,6 +22,7 @@ public class Jumping : MonoBehaviour
     
     void Awake()
     {
+        animController = GetComponent<AnimationController>();
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
         // Set Default AirJumps
@@ -60,6 +62,8 @@ public class Jumping : MonoBehaviour
         rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
 
         usedCayoteTime = true;
+
+        animController.Jump();
     }
 
     void AirborneJump()
@@ -83,6 +87,8 @@ public class Jumping : MonoBehaviour
 
             rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
             remainingAirJumps--;
+
+            animController.Jump();
         }
     }
 
@@ -104,6 +110,8 @@ public class Jumping : MonoBehaviour
                 rig.AddForce((transform.forward + transform.up) * jumpForce, ForceMode.Impulse);
                 break;
         }
+
+        animController.Jump();
 
         usedCayoteTime = true;
     }
