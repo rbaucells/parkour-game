@@ -59,6 +59,7 @@ public class Jumping : MonoBehaviour
 
     public void GroundedJump()
     {
+        Debug.Log("Ground Jump");
         rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
 
         usedCayoteTime = true;
@@ -68,6 +69,7 @@ public class Jumping : MonoBehaviour
 
     void AirborneJump()
     {
+        Debug.Log("Airborn Jump");
         if (groundCheckScript.lastGroundedTime + cayoteTime > Time.time && !usedCayoteTime)
         {
             if (rig.velocity.y < 0)
@@ -94,6 +96,7 @@ public class Jumping : MonoBehaviour
 
     public void WallJump()
     {
+        Debug.Log("Wall Jump");
         // Jump Depending on WallSide
         switch (groundCheckScript.wallState)
         {

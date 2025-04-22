@@ -1,15 +1,33 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
+using UnityEngine.Pool;
 
 public class RaycastShooting : MonoBehaviour
 {
+    [RequireComponent(typeof(ParticleSystem))]
+    private class ReturnToPool : MonoBehaviour
+    {
+        public ParticleSystem system;
+        public IObjectPool<ParticleSystem> pool;
+
+        void Start()
+        {
+            system = GetComponent<ParticleSystem>();
+            var main = system.main;
+            main.stopAction = ParticleSystemStopAction.Callback;
+        }
+
+        void OnParticleSystemStopped()
+        {
+            Debug.Log("release");
+            pool.Release(system);
+        }
+    }
+
     public enum FireMode
     {
         Auto,
@@ -20,7 +38,7 @@ public class RaycastShooting : MonoBehaviour
 
     [SerializeField] FireMode fireMode;
 
-    [SerializeField] [Range(0,1500)] float fireRate;
+    [SerializeField][Range(0, 1500)] float fireRate;
 
     [SerializeField] Vector2 bulletSpread;
 
@@ -29,8 +47,8 @@ public class RaycastShooting : MonoBehaviour
     [SerializeField] float trailSpeed;
 
     [SerializeField] float force;
-    [SerializeField] [ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
-    [SerializeField] [ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
+    [SerializeField][ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
+    [SerializeField][ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
     [SerializeField] float knockBackForce;
     bool bursting;
 
@@ -53,13 +71,18 @@ public class RaycastShooting : MonoBehaviour
 
     AbstractGunAnimator gunAnimator;
 
+    IObjectPool<ParticleSystem> objectPool;
+
     void Start()
     {
-        gunAnimator = GetComponent<AbstractGunAnimator>();
-        timeBetweenShots = 60/fireRate;
-        Debug.Log ("Time Between Shots: " + timeBetweenShots);
+        // create object pool
+        objectPool = new ObjectPool<ParticleSystem>(CreatePooledItem, system => system.gameObject.SetActive(true), system => system.gameObject.SetActive(false), system =>  Destroy(system.gameObject), false, 1, 20);
 
-        cameraContainer = GameObject.Find("Camera Container").transform;
+        gunAnimator = GetComponent<AbstractGunAnimator>();
+        timeBetweenShots = 60 / fireRate;
+        Debug.Log("Time Between Shots: " + timeBetweenShots);
+
+        cameraContainer = GameObject.Find("Aiming Container").transform;
         reloadingScript = GetComponent<Reloading>();
 
         playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
@@ -115,7 +138,7 @@ public class RaycastShooting : MonoBehaviour
         }
         reloadingScript.curMag--;
 
-        nextFireTime = (float) Time.timeAsDouble + timeBetweenShots;
+        nextFireTime = (float)Time.timeAsDouble + timeBetweenShots;
 
         for (int i = 0; i < numberOfBullets; i++)
         {
@@ -124,11 +147,15 @@ public class RaycastShooting : MonoBehaviour
 
         gunAnimator.Fire();
         audioPlayer.FireSound();
-        
-        Instantiate(muzzleFlash, attackPoint.position, attackPoint.rotation);
 
+        // get object from pool
+        var instance = objectPool.Get();
+        // set position and rotation
+        instance.transform.position = attackPoint.position;
+        instance.transform.rotation = attackPoint.rotation;
 
         playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
+
     }
 
     void RaycastFire()
@@ -156,7 +183,7 @@ public class RaycastShooting : MonoBehaviour
         Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), cameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), cameraContainer.right) * cameraContainer.forward;
 
         Ray preRay = new(cameraContainer.position, direction.normalized);
-        
+
         Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
 
         if (Physics.Raycast(preRay, out RaycastHit hit, Mathf.Infinity, whatIsShootable))
@@ -197,5 +224,22 @@ public class RaycastShooting : MonoBehaviour
     private bool IsBurstMode()
     {
         return fireMode == FireMode.AutoBurst || fireMode == FireMode.SemiBurst;
+    }
+
+    ParticleSystem CreatePooledItem()
+    {
+        Debug.Log("create");
+        // create instance
+        var go = Instantiate(muzzleFlash);
+        // get particle system
+        var ps = go.GetComponent<ParticleSystem>();
+        // stop
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        // attach pooled object
+        var returnToPool = go.AddComponent<ReturnToPool>();
+        // set pool reference
+        returnToPool.pool = objectPool;
+        // use particle system
+        return ps;
     }
 }

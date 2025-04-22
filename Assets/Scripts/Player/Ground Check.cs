@@ -279,22 +279,22 @@ public class GroundCheck : MonoBehaviour
                     animController.GroundSlamMiddle(other.relativeVelocity.y);
                     break;
                 case Movement.MoveDirection.Right:
-                    animController.GroundSlamRight(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    animController.GroundSlamRight(other.relativeVelocity.y);
                     break;
                 case Movement.MoveDirection.ForwardRight:
-                    animController.GroundSlamRight(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    animController.GroundSlamRight(other.relativeVelocity.y);
                     break;
                 case Movement.MoveDirection.BackRight:
-                    animController.GroundSlamRight(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    animController.GroundSlamRight(other.relativeVelocity.y);
                     break;
                 case Movement.MoveDirection.Left:
-                    animController.GroundSlamLeft(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    animController.GroundSlamLeft(other.relativeVelocity.y);
                     break;
                 case Movement.MoveDirection.ForwardLeft:
-                    animController.GroundSlamLeft(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    animController.GroundSlamLeft(other.relativeVelocity.y);
                     break;
                 case Movement.MoveDirection.BackLeft:
-                    animController.GroundSlamLeft(other.relativeVelocity.y, Mathf.Abs(transform.InverseTransformDirection(other.relativeVelocity).x));
+                    animController.GroundSlamLeft(other.relativeVelocity.y);
                     break;
                 case Movement.MoveDirection.None:
                     animController.GroundSlamMiddle(other.relativeVelocity.y);

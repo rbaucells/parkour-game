@@ -12,39 +12,34 @@ public class AnimationController : MonoBehaviour
     [SerializeField] Transform cameraHolder;
     [SerializeField] CapsuleCollider capsuleCollider;
 
-    [SerializeField] Transform jumpLandSlamContainer;
-    [SerializeField] Transform walkContainer;
-    [SerializeField] Transform wallRunContainer;
-    [SerializeField] Transform dashContainer;
+    [SerializeField] Transform jumpContainer;
+    [SerializeField] Transform landContainer;
+    [SerializeField] Transform slamContainer;
+    [SerializeField] Transform wallConatiner;
 
     Sequence jumpSequence;
     Sequence wallRunRightInSequence;
     Sequence wallRunLeftInSequence;
-    Sequence wallRunOutSequence;
     
     void Start()
     {
         jumpSequence = DOTween.Sequence()
-            .Append(cameraHolder.DOLocalRotate(new Vector3(-4f,0f,0f), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(-3f,0f,0f), 0.4f))
-            .Append(cameraHolder.DOLocalRotate(new Vector3(0f,0f,0f), 0.6f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(0f,0f,0f), 0.6f))
-            .SetAutoKill(false);
-        
+            .Append(jumpContainer.DOLocalRotate(new Vector3(-3f, 0f, 0f), 0.2f))
+            .Append(jumpContainer.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.17f))
+            .SetAutoKill(false)
+            .SetEase(Ease.OutSine);
+
         wallRunLeftInSequence = DOTween.Sequence()
-            .Append(cameraHolder.DOLocalRotate(new Vector3(0, 5f, -5f), 0.3f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(0, 5f, -5f), 0.3f))
+            .Append(wallConatiner.DOLocalRotate(new Vector3(0, 5f, -5f), 0.3f))
             .SetAutoKill(false);
         
         wallRunRightInSequence = DOTween.Sequence()
-            .Append(cameraHolder.DOLocalRotate(new Vector3(0, -5f, 5f), 0.3f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(0, -5f, 5f), 0.3f))
+            .Append(wallConatiner.DOLocalRotate(new Vector3(0, -5f, 5f), 0.3f))
             .SetAutoKill(false);
     }
 
     public void Jump()
     {
-        Debug.Log("Jump Animation");
         jumpSequence.Restart();
     }
 
@@ -57,21 +52,18 @@ public class AnimationController : MonoBehaviour
 
     }
     public void Land(float speed)
-    {
-        Debug.Log("Land Animation");
-        var landSequence = DOTween.Sequence();
-
-        landSequence
-            .Append(cameraHolder.DOLocalRotate(new Vector3(4f * (Mathf.Clamp(speed, 0f, 50f)/30f) ,0,0), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(3.5f * (Mathf.Clamp(speed, 0f, 50f)/30f),0,0), 0.4f))
-            .Append(cameraHolder.DOLocalRotate(new Vector3(0f,0f,0f), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(0f,0f,0f), 0.4f))
+    {  
+        Sequence landSequence = DOTween.Sequence()
+            .Append(landContainer.DOLocalRotate(new Vector3(2 * (speed/30f), 0f, 0f), 0.15f))
+            .Append(landContainer.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.1f))
             .SetAutoKill(true)
+            .SetEase(Ease.OutSine)
             .Play();
     }
 
     public void WallRunRightIn()
     {
+        wallConatiner.DOKill();
         Debug.Log("Wall Run Right Animation");
         wallRunRightInSequence.Restart();
     }
@@ -88,60 +80,49 @@ public class AnimationController : MonoBehaviour
     
     public void WallRunLeftIn()
     {
+        wallConatiner.DOKill();
         Debug.Log("Wall Run Left Animation");
         wallRunLeftInSequence.Restart();
     }
 
     public void WallRunOut()
     {
-        Debug.Log("Wall Run Out Animation");
-        wallRunOutSequence = DOTween.Sequence()
-            .Append(cameraHolder.DOLocalRotate(new Vector3(0, 0f, 0f), 0.2f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(0, 0f, 0f), 0.2f))
+        wallConatiner.DOKill();
+
+        var wallRunOutSequence = DOTween.Sequence()
+            .Append(wallConatiner.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.2f))
             .SetAutoKill(true)
             .Play();
     }
 
     public void GroundSlamMiddle(float speed)
     {
-        var GroundSlamMiddleSequence = DOTween.Sequence();
-
-        GroundSlamMiddleSequence
-            .Append(cameraHolder.DOLocalRotate(new Vector3(10f * (Mathf.Clamp(speed, 0f, 80f) / 70f), 0, 0), 0.2f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(10f * (Mathf.Clamp(speed, 0f, 80f) / 70f), 0, 0), 0.2f))
-            .Append(cameraHolder.DOLocalRotate(new Vector3(-2f, 0f, 0f), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(-2f, 0f, 0f), 0.4f))
-            .Append(cameraHolder.DOLocalRotate(Vector3.zero, 0.1f))
-            .Join(weaponHolder.DOLocalRotate(Vector3.zero, 0.1f))
+        Sequence middleSlamSequence = DOTween.Sequence()
+            .Append(slamContainer.DOLocalRotate(new Vector3(4 * (speed/60), 0f, 0f), 0.35f))
+            .Append(slamContainer.DOLocalRotate(new Vector3(-1f, 0f, 0f), 0.3f))
+            .Append(slamContainer.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.2f))
             .SetAutoKill(true)
+            .SetEase(Ease.OutCubic)
             .Play();
     }
-    public void GroundSlamLeft(float speed, float hoziontalSpeed)
+    public void GroundSlamLeft(float speed)
     {
-        var GroundSlamLeftSequence = DOTween.Sequence();
-
-        GroundSlamLeftSequence
-            .Append(cameraHolder.DOLocalRotate(new Vector3(10f * (Mathf.Clamp(speed, 0f, 80f) / 70f), 0, 3f * (Mathf.Clamp(hoziontalSpeed, 0f, 30f) / 20)), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(10f * (Mathf.Clamp(speed, 0f, 80f) / 70f), 0, 3f * (Mathf.Clamp(hoziontalSpeed, 0f, 30f) / 20)), 0.4f))
-            .Append(cameraHolder.DOLocalRotate(new Vector3(-2f, 0f, 0f), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(-2f, 0f, 0f), 0.4f))
-            .Append(cameraHolder.DOLocalRotate(Vector3.zero, 0.2f))
-            .Join(weaponHolder.DOLocalRotate(Vector3.zero, 0.2f))
+        Sequence leftSlamSequence = DOTween.Sequence()
+            .Append(slamContainer.DOLocalRotate(new Vector3(4 * (speed/60), 0f, 4f), 0.35f))
+            .Append(slamContainer.DOLocalRotate(new Vector3(-1f, 0f, 1f), 0.3f))
+            .Append(slamContainer.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.2f))
             .SetAutoKill(true)
+            .SetEase(Ease.OutCubic)
             .Play();
     }
-    public void GroundSlamRight(float speed, float hoziontalSpeed)
+    public void GroundSlamRight(float speed)
     {
-        var groundSlamRightSequence = DOTween.Sequence();
-
-        groundSlamRightSequence
-            .Append(cameraHolder.DOLocalRotate(new Vector3(10f * (Mathf.Clamp(speed, 0f, 80f) / 70f), 0, -3f * (Mathf.Clamp(hoziontalSpeed, 0f, 30f) / 20)), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(10f * (Mathf.Clamp(speed, 0f, 80f) / 70f), 0, -3f * (Mathf.Clamp(hoziontalSpeed, 0f, 30f) / 20)), 0.4f))
-            .Append(cameraHolder.DOLocalRotate(new Vector3(-2f, 0f, 0f), 0.4f))
-            .Join(weaponHolder.DOLocalRotate(new Vector3(-2f, 0f, 0f), 0.4f))
-            .Append(cameraHolder.DOLocalRotate(Vector3.zero, 0.2f))
-            .Join(weaponHolder.DOLocalRotate(Vector3.zero, 0.2f))
+        Sequence rightSlamSequence = DOTween.Sequence()
+            .Append(slamContainer.DOLocalRotate(new Vector3(4 * (speed/60), 0f, -4f), 0.35f))
+            .Append(slamContainer.DOLocalRotate(new Vector3(-1f, 0f, -1f), 0.3f))
+            .Append(slamContainer.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.2f))
             .SetAutoKill(true)
+            .SetEase(Ease.OutCubic)
             .Play();
     }
     public void DashForward()
