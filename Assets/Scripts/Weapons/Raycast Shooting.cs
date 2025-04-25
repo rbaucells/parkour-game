@@ -47,8 +47,8 @@ public class RaycastShooting : MonoBehaviour
     [SerializeField] float trailSpeed;
 
     [SerializeField] float force;
-    [SerializeField][ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
-    [SerializeField][ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
+    [SerializeField] [ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
+    [SerializeField] [ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
     [SerializeField] float knockBackForce;
     bool bursting;
 
@@ -76,7 +76,7 @@ public class RaycastShooting : MonoBehaviour
     void Start()
     {
         // create object pool
-        objectPool = new ObjectPool<ParticleSystem>(CreatePooledItem, system => system.gameObject.SetActive(true), system => system.gameObject.SetActive(false), system =>  Destroy(system.gameObject), false, 1, 20);
+        objectPool = new ObjectPool<ParticleSystem>(CreatePooledItem, system => system.gameObject.SetActive(true), system => system.gameObject.SetActive(false), system =>  Destroy(system.gameObject), false, 10, 20);
 
         gunAnimator = GetComponent<AbstractGunAnimator>();
         timeBetweenShots = 60 / fireRate;
