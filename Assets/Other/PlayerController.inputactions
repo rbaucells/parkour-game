@@ -51,18 +51,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Shoot",
+                    "name": "Full-Auto Shoot",
                     "type": "Button",
                     "id": "d5b3d533-65f5-45de-b9ea-9a78562740dc",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Quit",
-                    "type": "Button",
-                    "id": "8dd312ea-9aad-4e87-9023-b594a507023d",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -81,6 +72,15 @@
                     "name": "Dash",
                     "type": "Button",
                     "id": "2928f81e-10c8-4df2-b18b-3f720214ecd1",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Semi-Auto Shoot",
+                    "type": "Button",
+                    "id": "6e993e5a-9ea2-4451-a111-27b9b4d0bfcd",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -249,7 +249,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Shoot",
+                    "action": "Full-Auto Shoot",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -260,18 +260,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Shoot",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "57153858-e52f-4ed0-9415-210e899181c0",
-                    "path": "<Keyboard>/escape",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Quit",
+                    "action": "Full-Auto Shoot",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -288,12 +277,56 @@
                 },
                 {
                     "name": "",
+                    "id": "04f03901-8f42-4a2c-96fd-2c57cb11e717",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Grapple",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "046bf534-c348-422a-a40b-8e7562aa315d",
                     "path": "<Keyboard>/ctrl",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1f319c69-c1f4-4143-aefd-56dc8bfe2a3d",
+                    "path": "<Gamepad>/leftStickPress",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "20d2b966-441e-4c9c-84df-bf668a20fb63",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Semi-Auto Shoot",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "18e35508-627c-4a4d-9bad-18eacadc7b4b",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Semi-Auto Shoot",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

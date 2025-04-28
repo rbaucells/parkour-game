@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using NaughtyAttributes;
@@ -32,7 +31,6 @@ public class ProjectileShooting : MonoBehaviour
     bool bursting;
 
     float timeBetweenShots;
-    float lastFireTime;
     float nextFireTime;
 
     [SerializeField] LayerMask whatIsShootable;

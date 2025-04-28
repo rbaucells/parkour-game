@@ -8,25 +8,25 @@ using UnityEngine.Pool;
 
 public class RaycastShooting : MonoBehaviour
 {
-    [RequireComponent(typeof(ParticleSystem))]
-    private class ReturnToPool : MonoBehaviour
-    {
-        public ParticleSystem system;
-        public IObjectPool<ParticleSystem> pool;
+    // [RequireComponent(typeof(ParticleSystem))]
+    // private class ReturnToPool : MonoBehaviour
+    // {
+    //     public ParticleSystem system;
+    //     public IObjectPool<ParticleSystem> pool;
 
-        void Start()
-        {
-            system = GetComponent<ParticleSystem>();
-            var main = system.main;
-            main.stopAction = ParticleSystemStopAction.Callback;
-        }
+    //     void Start()
+    //     {
+    //         system = GetComponent<ParticleSystem>();
+    //         var main = system.main;
+    //         main.stopAction = ParticleSystemStopAction.Callback;
+    //     }
 
-        void OnParticleSystemStopped()
-        {
-            Debug.Log("release");
-            pool.Release(system);
-        }
-    }
+    //     void OnParticleSystemStopped()
+    //     {
+    //         Debug.Log("release");
+    //         pool.Release(system);
+    //     }
+    // }
 
     public enum FireMode
     {
@@ -53,7 +53,6 @@ public class RaycastShooting : MonoBehaviour
     bool bursting;
 
     float timeBetweenShots;
-    float lastFireTime;
     float nextFireTime;
 
     [SerializeField] LayerMask whatIsShootable;
@@ -65,18 +64,18 @@ public class RaycastShooting : MonoBehaviour
     Reloading reloadingScript;
     Audio audioPlayer;
     Rigidbody playerRig;
-    [SerializeField] TrailRenderer bulletTrail;
-    [SerializeField] GameObject impactParticleSystem;
-    [SerializeField] GameObject muzzleFlash;
-
     AbstractGunAnimator gunAnimator;
 
-    IObjectPool<ParticleSystem> objectPool;
+    [SerializeField] ObjectPool muzzleFlashPool;
+    [SerializeField] ObjectPool bulletTrailPool;
+    [SerializeField] ObjectPool impactParticleSystemPool;
+
+    // IObjectPool<ParticleSystem> objectPool;
 
     void Start()
     {
         // create object pool
-        objectPool = new ObjectPool<ParticleSystem>(CreatePooledItem, system => system.gameObject.SetActive(true), system => system.gameObject.SetActive(false), system =>  Destroy(system.gameObject), false, 10, 20);
+        // objectPool = new ObjectPool<ParticleSystem>(CreatePooledItem, system => system.gameObject.SetActive(true), system => system.gameObject.SetActive(false), system =>  Destroy(system.gameObject), false, 10, 20);
 
         gunAnimator = GetComponent<AbstractGunAnimator>();
         timeBetweenShots = 60 / fireRate;
@@ -148,11 +147,10 @@ public class RaycastShooting : MonoBehaviour
         gunAnimator.Fire();
         audioPlayer.FireSound();
 
-        // get object from pool
-        var instance = objectPool.Get();
-        // set position and rotation
-        instance.transform.position = attackPoint.position;
-        instance.transform.rotation = attackPoint.rotation;
+        GameObject muzzleFlash = muzzleFlashPool.GetObject();
+
+        muzzleFlash.transform.position = attackPoint.position;
+        muzzleFlash.transform.rotation = attackPoint.rotation;
 
         playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
 
@@ -170,7 +168,7 @@ public class RaycastShooting : MonoBehaviour
 
             hit.rigidbody?.AddForceAtPosition(ray.direction * force, hit.point, ForceMode.Impulse);
 
-            Debug.Log("Hit Position at: " + hit.point + "Hit Rigidbyd name: " + hit.rigidbody + "On Layer: " + hit.collider.gameObject.layer);
+            // Debug.Log("Hit Position at: " + hit.point + "Hit Rigidbyd name: " + hit.rigidbody + "On Layer: " + hit.collider.gameObject.layer);
         }
         else
         {
@@ -198,10 +196,15 @@ public class RaycastShooting : MonoBehaviour
 
     public IEnumerator RaycastTrail(Vector3 start, Vector3 end, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path
     {
-        TrailRenderer Trail = Instantiate(bulletTrail, start, Quaternion.identity);
+        GameObject Trail = bulletTrailPool.GetObject();
+        Trail.GetComponent<TrailRenderer>().enabled = false;
+        Trail.transform.position = start;
+        Trail.transform.rotation = Quaternion.identity;
+
         float distance = Vector3.Distance(start, end);
         float remainingDistance = distance;
 
+        Trail.GetComponent<TrailRenderer>().enabled = true;
         while (remainingDistance > 0)
         {
             Trail.transform.position = Vector3.Lerp(start, end, 1 - (remainingDistance / distance));
@@ -214,10 +217,12 @@ public class RaycastShooting : MonoBehaviour
 
         if (MadeImpact)
         {
-            Instantiate(impactParticleSystem, end, Quaternion.LookRotation(HitNormal));
+            GameObject impactParticleSystem = impactParticleSystemPool.GetObject();
+            impactParticleSystem.transform.position = end;
+            impactParticleSystem.transform.rotation = Quaternion.LookRotation(HitNormal);
         }
-
-        Destroy(Trail.gameObject, Trail.time);
+        Trail.GetComponent<TrailRenderer>().enabled = false;
+        bulletTrailPool.ReleaseObject(Trail);
     }
 
     // Helper method for NaughtyAttributes
@@ -226,20 +231,20 @@ public class RaycastShooting : MonoBehaviour
         return fireMode == FireMode.AutoBurst || fireMode == FireMode.SemiBurst;
     }
 
-    ParticleSystem CreatePooledItem()
-    {
-        Debug.Log("create");
-        // create instance
-        var go = Instantiate(muzzleFlash);
-        // get particle system
-        var ps = go.GetComponent<ParticleSystem>();
-        // stop
-        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        // attach pooled object
-        var returnToPool = go.AddComponent<ReturnToPool>();
-        // set pool reference
-        returnToPool.pool = objectPool;
-        // use particle system
-        return ps;
-    }
+    // ParticleSystem CreatePooledItem()
+    // {
+    //     Debug.Log("create");
+    //     // create instance
+    //     var go = Instantiate(muzzleFlash);
+    //     // get particle system
+    //     var ps = go.GetComponent<ParticleSystem>();
+    //     // stop
+    //     ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+    //     // attach pooled object
+    //     var returnToPool = go.AddComponent<ReturnToPool>();
+    //     // set pool reference
+    //     returnToPool.pool = objectPool;
+    //     // use particle system
+    //     return ps;
+    // }
 }

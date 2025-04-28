@@ -1,9 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using UnityEngine;
 
-public class BulletScript : MonoBehaviour
+[RequireComponent(typeof(Rigidbody))]
+public class ProjectileBullet : MonoBehaviour
 {
     public enum ImpactAction
     {
@@ -28,7 +26,7 @@ public class BulletScript : MonoBehaviour
     {
         rig = GetComponent<Rigidbody>();
 
-        StartCoroutine(DestroyBullet(bulletDestroyTime));
+        Invoke(nameof(DestroyBullet), bulletDestroyTime);
     }
 
     void FixedUpdate()
@@ -38,7 +36,6 @@ public class BulletScript : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Collided with: " + collision.collider.gameObject.name);
         switch (impactAction)
         {
             case ImpactAction.Explode:
@@ -50,13 +47,11 @@ public class BulletScript : MonoBehaviour
         }
 
         Instantiate(impactParticle, transform.position, Quaternion.Euler(collision.GetContact(0).normal));
-
-        StartCoroutine(DestroyBullet(Time.deltaTime));
+        DestroyBullet();
     }
 
-    IEnumerator DestroyBullet(float delay)
+    void DestroyBullet()
     {
-        yield return new WaitForSeconds(delay);
         Destroy(gameObject);
     }
 }
