@@ -31,10 +31,19 @@ public class Crouching : MonoBehaviour
 
     [ShowIf(nameof(IsSlamActionExplode))] public float explosionUpForce;
 
+    [SerializeField] float unCrouchRaycastLengh;
+    [SerializeField] Transform crouchContainer;
+    [SerializeField] LayerMask unCrouchLayerMask;
+    [SerializeField] PhysicMaterial crouchedPhysicsMaterial;
+    [SerializeField] PhysicMaterial normalPhysicsMaterial;
+
     CrouchState crouchState = CrouchState.Standing;
     GroundCheck groundCheckScript;
     AnimationController animController;
+    Movement movementScript;
     Rigidbody rig;
+    CapsuleCollider capsuleCollider;
+    bool unCrouchCheck;
     
     void Awake()
     {
@@ -43,6 +52,10 @@ public class Crouching : MonoBehaviour
         rig = GetComponent<Rigidbody>();
         // Get GroundCheck Script Reference
         groundCheckScript = GetComponent<GroundCheck>();
+
+        movementScript = GetComponent<Movement>();
+
+        capsuleCollider = GetComponent<CapsuleCollider>();
     }
 
     public void OnCrouchInput(InputAction.CallbackContext context)
@@ -75,7 +88,12 @@ public class Crouching : MonoBehaviour
 
         Debug.Log("Start Crouch");
 
+        movementScript.crouching = true;
+
         animController.Crouch();
+
+        capsuleCollider.material = crouchedPhysicsMaterial;
+
     }
 
     void WhileCrouch() // Called while crouch input is pressed [FixedUpdate]
@@ -86,18 +104,36 @@ public class Crouching : MonoBehaviour
             rig.AddForce(-transform.up * crouchDownForce, ForceMode.Acceleration);
         }
 
+        if (unCrouchCheck)
+        {
+            if (!Physics.Raycast(crouchContainer.position, Vector3.up, unCrouchRaycastLengh, unCrouchLayerMask))
+            {
+                unCrouchCheck = false;
+                StopCrouch();
+            }
+        }
+
         Debug.Log("While Crouch");
     }
 
     void StopCrouch() // Called when crouch input is released
     {
+        if (Physics.Raycast(crouchContainer.position, Vector3.up, unCrouchRaycastLengh, unCrouchLayerMask))
+        {
+            unCrouchCheck = true;
+            return;
+        }
         canSlam = false;
 
         crouchState = CrouchState.Standing;
         
         Debug.Log("Stop Crouch");
 
+        movementScript.crouching = false;
+
         animController.UnCrouch();
+
+        capsuleCollider.material = normalPhysicsMaterial;
     }
 
     // Helper methods for NaughtyAttributes

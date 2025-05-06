@@ -27,7 +27,7 @@ public class ReturnToPool : MonoBehaviour
 
     void ReturnObject()
     {
-        Debug.Log("Return to Pool");
+        // Debug.Log("Return to Pool");
         pool.Release(gameObject);
     }
 }

@@ -102,7 +102,7 @@ public class GroundCheck : MonoBehaviour
         // If we are grounded but we were WallGrounded. Transition
         else if (curGrounded && groundState == GroundState.WallGrounded)
         {
-            GroundedToWallGrounded(other);
+            WallGroundedToGrounded(other);
         }
 
 
@@ -227,7 +227,7 @@ public class GroundCheck : MonoBehaviour
     void OnCollisionExit(Collision other)
     {
         // Remove the collider from the grounded colliders
-        groundColliders.Clear();
+        groundColliders.Remove(other.collider);
 
         bool curGrounded = groundColliders.Any();
 
@@ -238,7 +238,7 @@ public class GroundCheck : MonoBehaviour
         }
 
         // Remove the collider from the wall colliders
-        wallColliders.Clear();
+        wallColliders.Remove(other.collider);
 
         bool curWallGrounded = wallColliders.Any();
 
@@ -322,7 +322,7 @@ public class GroundCheck : MonoBehaviour
         lastGroundedTime = Time.time;
     }
 
-    void GroundedToWallGrounded(Collision other)
+    void WallGroundedToGrounded(Collision other)
     {
         wallColliders.Remove(other.collider);
         WallGroundedToAirborne();
@@ -333,25 +333,8 @@ public class GroundCheck : MonoBehaviour
     void AirborneToWallGrounded()
     {
         groundState = GroundState.WallGrounded;
-        switch (wallState)
-        {
-            case WallState.Right:
-                // Debug.Log("Enter Right");
-                animController.WallRunRightIn();
-                break;
-            case WallState.Left:
-                // Debug.Log("Enter Left");
-                animController.WallRunLeftIn();
-                break;
-            case WallState.Front:
-                // Debug.Log("Enter Front");
-                animController.WallRunFrontIn();
-                break;
-            case WallState.Back:
-                // Debug.Log("Enter Back");
-                animController.WallRunBackIn();
-                break;
-        }
+
+        animController.WallRunIn(wallState);
 
         jumpingScript.remainingAirJumps = jumpingScript.maxAirJumps;
         jumpingScript.usedCayoteTime = false;
@@ -360,21 +343,6 @@ public class GroundCheck : MonoBehaviour
     void WallGroundedToAirborne()
     {
         groundState = GroundState.Airborne;
-        // switch (wallState)
-        // {
-        //     case WallState.Right:
-        //         Debug.Log("Exit Right");
-        //         break;
-        //     case WallState.Left:
-        //         Debug.Log("Exit Left");
-        //         break;
-        //     case WallState.Front:
-        //         Debug.Log("Exit Front");
-        //         break;
-        //     case WallState.Back:
-        //         Debug.Log("Exit Back");
-        //         break;
-        // }
 
         animController.WallRunOut();
 

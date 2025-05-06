@@ -6,9 +6,10 @@ using UnityEngine.InputSystem;
 
 public class Jumping : MonoBehaviour
 {
-    AnimationController animController;
     [HideInInspector] public bool jumpHeld;
-    [SerializeField] float jumpForce;
+    [SerializeField] float groundJumpForce;
+    [SerializeField] float airJumpForce;
+    [SerializeField] float wallJumpForce;
     GroundCheck groundCheckScript;
 
     [Range(0,1)] [SerializeField] float cayoteTime;
@@ -19,6 +20,7 @@ public class Jumping : MonoBehaviour
     [HideInInspector] public int remainingAirJumps;
 
     Rigidbody rig;
+    AnimationController animController;
     
     void Awake()
     {
@@ -60,7 +62,7 @@ public class Jumping : MonoBehaviour
     public void GroundedJump()
     {
         Debug.Log("Ground Jump");
-        rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+        rig.AddForce(transform.up * groundJumpForce, ForceMode.Impulse);
 
         usedCayoteTime = true;
 
@@ -76,8 +78,10 @@ public class Jumping : MonoBehaviour
             {
                 rig.velocity = new(rig.velocity.x, 0, rig.velocity.z);
             }
-            rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+            rig.AddForce(transform.up * groundJumpForce, ForceMode.Impulse);
             usedCayoteTime = true;
+
+            animController.Jump();
         }
         // If we Haven't ran out of AirJumps
         else if (remainingAirJumps > 0)
@@ -87,35 +91,35 @@ public class Jumping : MonoBehaviour
                 rig.velocity = new(rig.velocity.x, 0, rig.velocity.z);
             }
 
-            rig.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+            rig.AddForce(transform.up * airJumpForce, ForceMode.Impulse);
             remainingAirJumps--;
 
             animController.Jump();
         }
     }
 
-    public void WallJump()
+    void WallJump()
     {
+        usedCayoteTime = true;
+
         Debug.Log("Wall Jump");
         // Jump Depending on WallSide
         switch (groundCheckScript.wallState)
         {
             case GroundCheck.WallState.Right:
-                rig.AddForce((-transform.right + transform.up) * jumpForce, ForceMode.Impulse);
+                rig.AddForce((-transform.right + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
             case GroundCheck.WallState.Left:
-                rig.AddForce((transform.right + transform.up) * jumpForce, ForceMode.Impulse);
+                rig.AddForce((transform.right + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
             case GroundCheck.WallState.Front:
-                rig.AddForce((-transform.forward + transform.up) * jumpForce, ForceMode.Impulse);
+                rig.AddForce((-transform.forward + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
             case GroundCheck.WallState.Back:
-                rig.AddForce((transform.forward + transform.up) * jumpForce, ForceMode.Impulse);
+                rig.AddForce((transform.forward + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
         }
 
         animController.Jump();
-
-        usedCayoteTime = true;
     }
 }

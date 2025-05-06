@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using DG.Tweening;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -16,26 +17,21 @@ public class AnimationController : MonoBehaviour
     [SerializeField] Transform landContainer;
     [SerializeField] Transform slamContainer;
     [SerializeField] Transform wallConatiner;
+    [SerializeField] Transform crouchContainer;
 
     Sequence jumpSequence;
-    Sequence wallRunRightInSequence;
-    Sequence wallRunLeftInSequence;
-    
+    Sequence wallRunRightIn;
+    Sequence wallRunLeftIn;
+    Sequence wallRunFrontIn;
+    Sequence wallRunBackIn;
+    Sequence wallRunOut;
     void Start()
     {
         jumpSequence = DOTween.Sequence()
-            .Append(jumpContainer.DOLocalRotate(new Vector3(-3f, 0f, 0f), 0.2f))
+            .Append(jumpContainer.DOLocalRotate(new Vector3(-4f, 0f, 0f), 0.18f))
             .Append(jumpContainer.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.17f))
             .SetAutoKill(false)
             .SetEase(Ease.OutSine);
-
-        wallRunLeftInSequence = DOTween.Sequence()
-            .Append(wallConatiner.DOLocalRotate(new Vector3(0, 5f, -5f), 0.3f))
-            .SetAutoKill(false);
-        
-        wallRunRightInSequence = DOTween.Sequence()
-            .Append(wallConatiner.DOLocalRotate(new Vector3(0, -5f, 5f), 0.3f))
-            .SetAutoKill(false);
     }
 
     public void Jump()
@@ -61,35 +57,84 @@ public class AnimationController : MonoBehaviour
             .Play();
     }
 
-    public void WallRunRightIn()
+    public void WallRunIn(GroundCheck.WallState wallState)
     {
-        wallConatiner.DOKill();
-        Debug.Log("Wall Run Right Animation");
-        wallRunRightInSequence.Restart();
+        switch (wallState)
+        {
+            case GroundCheck.WallState.Right:
+                WallRunRightIn();
+                break;
+            case GroundCheck.WallState.Left:
+                WallRunLeftIn();
+                break;
+            case GroundCheck.WallState.Front:
+                WallRunFrontIn();
+                break;
+            case GroundCheck.WallState.Back:
+                WallRunBackIn();
+                break;
+        }
     }
 
-    public void WallRunFrontIn()
-    {
+    void WallRunRightIn()
+    {   
+        wallRunLeftIn.Kill();
+        wallRunOut.Kill();
+        wallRunBackIn.Kill();
+        wallRunFrontIn.Kill();
 
+        wallRunRightIn = DOTween.Sequence()
+            .Append(wallConatiner.DOLocalRotate(new Vector3(0, -5f, 5f), 0.3f))
+            .SetAutoKill(true)
+            .Play();
     }
 
-     public void WallRunBackIn()
+    void WallRunFrontIn()
     {
-        
+        wallRunLeftIn.Kill();
+        wallRunRightIn.Kill();
+        wallRunOut.Kill();
+        wallRunBackIn.Kill();
+
+        wallRunFrontIn = DOTween.Sequence()
+            .Append(wallConatiner.DOLocalRotate(new Vector3(-10, 0, 0), 0.3f))
+            .SetAutoKill(true)
+            .Play();
+    }
+
+    void WallRunBackIn()
+    {
+        wallRunLeftIn.Kill();
+        wallRunRightIn.Kill();
+        wallRunOut.Kill();
+        wallRunFrontIn.Kill();
+
+        wallRunBackIn = DOTween.Sequence()
+            .Append(wallConatiner.DOLocalRotate(new Vector3(10, 0, 0), 0.3f))
+            .SetAutoKill(true)
+            .Play(); 
     }
     
-    public void WallRunLeftIn()
+    void WallRunLeftIn()
     {
-        wallConatiner.DOKill();
-        Debug.Log("Wall Run Left Animation");
-        wallRunLeftInSequence.Restart();
-    }
+        wallRunRightIn.Kill();
+        wallRunOut.Kill();
+        wallRunBackIn.Kill();
+        wallRunFrontIn.Kill();
 
+        wallRunLeftIn = DOTween.Sequence()
+            .Append(wallConatiner.DOLocalRotate(new Vector3(0, 5f, -5f), 0.3f))
+            .SetAutoKill(true)
+            .Play();
+    }
     public void WallRunOut()
     {
-        wallConatiner.DOKill();
+        wallRunLeftIn.Kill();
+        wallRunRightIn.Kill();
+        wallRunBackIn.Kill();
+        wallRunFrontIn.Kill();
 
-        var wallRunOutSequence = DOTween.Sequence()
+        wallRunOut = DOTween.Sequence()
             .Append(wallConatiner.DOLocalRotate(new Vector3(0f, 0f, 0f), 0.2f))
             .SetAutoKill(true)
             .Play();
@@ -161,16 +206,20 @@ public class AnimationController : MonoBehaviour
     {
         float curHeight = capsuleCollider.height;
         float curCenter = capsuleCollider.center.y;
-        DOTween.To(() => curHeight, x => capsuleCollider.height = x, 1f, 0.2f);
-        DOTween.To(() => curCenter, x => capsuleCollider.center = new Vector3(0f, x, 0), -0.45f, 0.2f);
-        cameraContainer.DOLocalMove(new Vector3(0, 0f, 0), 0.2f);
+        float curRadius = capsuleCollider.radius;
+        DOVirtual.Float(curHeight, 0.5f, 0.2f, x => capsuleCollider.height = x);
+        DOVirtual.Float(curCenter, -0.75f, 0.2f, x => capsuleCollider.center = new Vector3(0f, x, 0f));
+        DOVirtual.Float(curRadius, 0.25f, 0.2f, x => capsuleCollider.radius = x);
+        crouchContainer.DOLocalMove(new Vector3(0, -0.25f, 0), 0.2f);
     }
     public void UnCrouch()
     {
         float curHeight = capsuleCollider.height;
         float curCenter = capsuleCollider.center.y;
+        float curRadius = capsuleCollider.radius;
         DOVirtual.Float(curHeight, 2f, 0.2f, x => capsuleCollider.height = x);
         DOVirtual.Float(curCenter, 0f, 0.2f, x => capsuleCollider.center = new Vector3(0, x, 0));
-        cameraContainer.DOLocalMove(new Vector3(0, 1f, 0), 0.2f);
+        DOVirtual.Float(curRadius, 0.5f, 0.2f, x => capsuleCollider.radius = x);
+        crouchContainer.DOLocalMove(new Vector3(0, 1, 0), 0.2f);
     }
 }

@@ -26,9 +26,20 @@ public class Movement : MonoBehaviour
         None
     }
 
-    GroundCheck groundCheck;
+    [SerializeField] float onGroundMoveSpeed = 5f;
+    [SerializeField] float onGroundDrag;
+    [SerializeField] PhysicMaterial onGroundPhysicsMaterial;
+    
+    [SerializeField] float inAirMoveSpeed;
+    [SerializeField] float inAirDrag;
 
-    [SerializeField] float moveSpeed = 5f;
+    [SerializeField] float onWallMoveSpeed;
+    [SerializeField] float onWallDrag;
+    [SerializeField] PhysicMaterial onWallPhysicsMaterial;
+
+    [SerializeField] float crouchMoveSpeed;
+    [SerializeField] float crouchDrag;
+    [SerializeField] PhysicMaterial crouchPhysicsMaterial;
 
     MoveState moveState = MoveState.Idle;
     [HideInInspector] public MoveDirection moveDirection { get; private set; } = MoveDirection.None;
@@ -36,16 +47,23 @@ public class Movement : MonoBehaviour
     const float MOVE_THRESHOLD = 0.1f;
 
     [SerializeField] Transform cameraContainer;
+    
+    [HideInInspector] public bool crouching;
+
+    GroundCheck groundCheckScript;
     Vector2 moveInputValue;
     Rigidbody rig;
+    CapsuleCollider capsuleCollider;
 
     void Awake()
     {
         animController = GetComponent<AnimationController>();
         // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
-        // Get Ground Check Reference
-        groundCheck = GetComponent<GroundCheck>();
+        // Get GroundCheck Script Reference
+        groundCheckScript = GetComponent<GroundCheck>();
+
+        capsuleCollider = GetComponent<CapsuleCollider>();
     }
 
     public void OnMoveInput(InputAction.CallbackContext context)
@@ -63,7 +81,7 @@ public class Movement : MonoBehaviour
 
     void FixedUpdate()
     {
-        bool curMoving = (moveInputValue.magnitude > MOVE_THRESHOLD);
+        bool curMoving = moveInputValue.magnitude > MOVE_THRESHOLD;
         // If we are moving
         if (curMoving)
         {
@@ -97,9 +115,32 @@ public class Movement : MonoBehaviour
 
     void WhileMoving()
     {
-        // Move the player
-        rig.AddRelativeForce(new Vector3(moveInputValue.x, 0, moveInputValue.y) * moveSpeed, ForceMode.Acceleration);
-
+        switch (groundCheckScript.groundState)
+        {
+            case GroundCheck.GroundState.Grounded:
+                if (crouching)
+                {
+                    rig.drag = crouchDrag;
+                    capsuleCollider.material = crouchPhysicsMaterial;
+                    rig.AddRelativeForce(new Vector3(moveInputValue.x, 0, moveInputValue.y) * crouchMoveSpeed, ForceMode.Acceleration);
+                }
+                else
+                {
+                    rig.drag = onGroundDrag;
+                    capsuleCollider.material = onGroundPhysicsMaterial;
+                    rig.AddRelativeForce(new Vector3(moveInputValue.x, 0, moveInputValue.y) * onGroundMoveSpeed, ForceMode.Acceleration);
+                }
+                break;
+            case GroundCheck.GroundState.WallGrounded:
+                rig.drag = onWallDrag;
+                capsuleCollider.material = onWallPhysicsMaterial;
+                rig.AddRelativeForce(new Vector3(moveInputValue.x, 0, moveInputValue.y) * onWallMoveSpeed, ForceMode.Acceleration);
+                break;
+            case GroundCheck.GroundState.Airborne:
+                rig.drag = inAirDrag;
+                rig.AddRelativeForce(new Vector3(moveInputValue.x, 0, moveInputValue.y) * inAirMoveSpeed, ForceMode.Acceleration);
+                break;
+        }
         // Determine the direction of movement
         if (moveInputValue.y > MOVE_THRESHOLD)
         {

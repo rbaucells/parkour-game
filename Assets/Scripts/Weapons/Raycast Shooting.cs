@@ -5,29 +5,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
 using UnityEngine.Pool;
+using Unity.VisualScripting;
 
 public class RaycastShooting : MonoBehaviour
 {
-    // [RequireComponent(typeof(ParticleSystem))]
-    // private class ReturnToPool : MonoBehaviour
-    // {
-    //     public ParticleSystem system;
-    //     public IObjectPool<ParticleSystem> pool;
-
-    //     void Start()
-    //     {
-    //         system = GetComponent<ParticleSystem>();
-    //         var main = system.main;
-    //         main.stopAction = ParticleSystemStopAction.Callback;
-    //     }
-
-    //     void OnParticleSystemStopped()
-    //     {
-    //         Debug.Log("release");
-    //         pool.Release(system);
-    //     }
-    // }
-
     public enum FireMode
     {
         Auto,
@@ -74,9 +55,6 @@ public class RaycastShooting : MonoBehaviour
 
     void Start()
     {
-        // create object pool
-        // objectPool = new ObjectPool<ParticleSystem>(CreatePooledItem, system => system.gameObject.SetActive(true), system => system.gameObject.SetActive(false), system =>  Destroy(system.gameObject), false, 10, 20);
-
         gunAnimator = GetComponent<AbstractGunAnimator>();
         timeBetweenShots = 60 / fireRate;
         Debug.Log("Time Between Shots: " + timeBetweenShots);
@@ -197,14 +175,16 @@ public class RaycastShooting : MonoBehaviour
     public IEnumerator RaycastTrail(Vector3 start, Vector3 end, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path
     {
         GameObject Trail = bulletTrailPool.GetObject();
-        Trail.GetComponent<TrailRenderer>().enabled = false;
+
+        Trail.SetActive(true);
+        Trail.GetComponent<TrailRenderer>().emitting = true;
+        Trail.GetComponent<TrailRenderer>().Clear();
+        Trail.GetComponent<TrailRenderer>().enabled = true;
+
         Trail.transform.position = start;
         Trail.transform.rotation = Quaternion.identity;
-
         float distance = Vector3.Distance(start, end);
         float remainingDistance = distance;
-
-        Trail.GetComponent<TrailRenderer>().enabled = true;
         while (remainingDistance > 0)
         {
             Trail.transform.position = Vector3.Lerp(start, end, 1 - (remainingDistance / distance));
@@ -214,6 +194,13 @@ public class RaycastShooting : MonoBehaviour
             yield return null;
         }
         Trail.transform.position = end;
+        
+        Trail.GetComponent<TrailRenderer>().emitting = false;
+        Trail.GetComponent<TrailRenderer>().Clear();
+        Trail.SetActive(false);
+        Trail.GetComponent<TrailRenderer>().enabled = false;
+
+        bulletTrailPool.ReleaseObject(Trail);
 
         if (MadeImpact)
         {
@@ -221,8 +208,6 @@ public class RaycastShooting : MonoBehaviour
             impactParticleSystem.transform.position = end;
             impactParticleSystem.transform.rotation = Quaternion.LookRotation(HitNormal);
         }
-        Trail.GetComponent<TrailRenderer>().enabled = false;
-        bulletTrailPool.ReleaseObject(Trail);
     }
 
     // Helper method for NaughtyAttributes
@@ -230,21 +215,4 @@ public class RaycastShooting : MonoBehaviour
     {
         return fireMode == FireMode.AutoBurst || fireMode == FireMode.SemiBurst;
     }
-
-    // ParticleSystem CreatePooledItem()
-    // {
-    //     Debug.Log("create");
-    //     // create instance
-    //     var go = Instantiate(muzzleFlash);
-    //     // get particle system
-    //     var ps = go.GetComponent<ParticleSystem>();
-    //     // stop
-    //     ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-    //     // attach pooled object
-    //     var returnToPool = go.AddComponent<ReturnToPool>();
-    //     // set pool reference
-    //     returnToPool.pool = objectPool;
-    //     // use particle system
-    //     return ps;
-    // }
 }
