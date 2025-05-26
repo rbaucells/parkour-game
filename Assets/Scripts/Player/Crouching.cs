@@ -6,56 +6,58 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Debug = UnityEngine.Debug;
+using UnityEngine.Events;
 
 public class Crouching : MonoBehaviour
 {
-    public enum CrouchState
-    {
-        Crouched,
-        Standing
-    }
-
     public enum SlamAction
     {
+        None,
         Explode,
-        Implode,
-        None
+        Implode
     }
-    
-    [SerializeField] float crouchDownForce;
-    public SlamAction slamAction;
-    [HideInInspector] public bool canSlam;
+
+    [Header("Ground Slam Action")]
+    [SerializeField] SlamAction slamAction = SlamAction.None;
+
+    bool canSlam;
 
     [ShowIf(nameof(IsSlamActionExplodeOrImplode))] public float actionRadius;
     [ShowIf(nameof(IsSlamActionExplodeOrImplode))] public float actionForce;
-
     [ShowIf(nameof(IsSlamActionExplode))] public float explosionUpForce;
 
-    [SerializeField] float unCrouchRaycastLengh;
-    [SerializeField] Transform crouchContainer;
-    [SerializeField] LayerMask unCrouchLayerMask;
-    [SerializeField] PhysicMaterial crouchedPhysicsMaterial;
-    [SerializeField] PhysicMaterial normalPhysicsMaterial;
+    [SerializeField] float groundSlamForce;
 
-    CrouchState crouchState = CrouchState.Standing;
-    GroundCheck groundCheckScript;
-    AnimationController animController;
-    Movement movementScript;
+    [Header("Slide")]
+    [SerializeField] float maxSlideTime;
+    float startSlideTime;
+    [SerializeField] float startDirectionMoveSpeed;
+    [SerializeField] float startImpulse;
+    [SerializeField] float endVelocityMultiplier;
+    bool waitForGroundSlide;
+    Vector3 startDirection;
+
+    [Header("Misc")]
+    [SerializeField] float crouchDownForce;
+    [SerializeField] float unCrouchRaycastLengh;
+
+    [Header("References")]
+    [SerializeField] LayerMask unCrouchLayerMask;
+    [SerializeField] Transform crouchCameraContainer;
+
+    [Header("Events")]
+    public UnityEvent onCrouch = new UnityEvent();
+    public UnityEvent onSlide = new UnityEvent();
+    public UnityEvent onUnCrouchSlide = new UnityEvent();
+    public UnityEvent onGroundSlam = new UnityEvent();
     Rigidbody rig;
-    CapsuleCollider capsuleCollider;
-    bool unCrouchCheck;
-    
+    CommonVariables commonVariables;
+
     void Awake()
     {
-        animController = GetComponent<AnimationController>();
-        // Get Rigidbody Reference
+        // get references
         rig = GetComponent<Rigidbody>();
-        // Get GroundCheck Script Reference
-        groundCheckScript = GetComponent<GroundCheck>();
-
-        movementScript = GetComponent<Movement>();
-
-        capsuleCollider = GetComponent<CapsuleCollider>();
+        commonVariables = GetComponent<CommonVariables>();
     }
 
     public void OnCrouchInput(InputAction.CallbackContext context)
@@ -63,86 +65,165 @@ public class Crouching : MonoBehaviour
         switch (context.phase)
         {
             case InputActionPhase.Performed:
-                StartCrouch();
+                if (commonVariables.GetMoveDirection() == MoveDirection.None)
+                {
+                    switch (commonVariables.GetGroundState())
+                    {
+                        case GroundState.Grounded:
+                            StartCrouchOnGround();
+                            break;
+                        case GroundState.Airborne:
+                            StartCrouchInAir();
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (commonVariables.GetGroundState())
+                    {
+                        case GroundState.Grounded:
+                            StartSlideOnGround();
+                            break;
+                        case GroundState.Airborne:
+                            StartSlideInAir();
+                            break;
+                    }
+                }
                 break;
             case InputActionPhase.Canceled:
-                StopCrouch();
+                StopCrouchSlide();
                 break;
         } 
     }
 
     void FixedUpdate()
     {
-        if (crouchState == CrouchState.Crouched)
+        switch (commonVariables.GetCrouchState())
         {
-            WhileCrouch();
+            case CrouchState.Crouched:
+                switch (commonVariables.GetGroundState())
+                {
+                    case GroundState.Grounded:
+                        WhileCrouchOnGround();
+                        break;
+                    case GroundState.Airborne:
+                        WhileCrouchInAir();
+                        break;
+                }
+
+                break;
+            case CrouchState.Sliding:
+                switch (commonVariables.GetGroundState())
+                {
+                    case GroundState.Grounded:
+                        WhileSlideOnGround();
+                        break;
+                    case GroundState.Airborne:
+                        WhileSlideInAir();
+                        break;
+                }
+
+                break;
         }
     }
 
-    void StartCrouch() // Called when crouch input is pressed
+    void StartCrouchOnGround()
     {
-        if (groundCheckScript.groundState == GroundCheck.GroundState.Airborne)
-            canSlam = true;
+        commonVariables.SetCrouchState(CrouchState.Crouched);
+        onCrouch.Invoke();
+    }
 
-        crouchState = CrouchState.Crouched;
+    void StartCrouchInAir()
+    {
+        commonVariables.SetCrouchState(CrouchState.Crouched);
+        onCrouch.Invoke();
+        canSlam = true;
+    }
 
-        Debug.Log("Start Crouch");
+    void StartSlideOnGround()
+    {
+        commonVariables.SetCrouchState(CrouchState.Sliding);
+        onSlide.Invoke();
+        Vector2 moveInput = commonVariables.GetMoveInput();
+        startDirection = new Vector3(moveInput.x, 0, moveInput.y);
+        rig.AddRelativeForce(startDirection * startImpulse, ForceMode.Impulse);
+        startSlideTime = Time.time;
+    }
 
-        movementScript.crouching = true;
+    public void StartAirSlideOnGround()
+    {
+        if (waitForGroundSlide)
+        {
+            StartSlideOnGround();
+        }
+    }
 
-        animController.Crouch();
+    void StartSlideInAir()
+    {
+        waitForGroundSlide = true;
+    }
 
-        capsuleCollider.material = crouchedPhysicsMaterial;
+    void WhileCrouchOnGround()
+    {
 
     }
 
-    void WhileCrouch() // Called while crouch input is pressed [FixedUpdate]
+    void WhileSlideOnGround()
     {
-        // Apply downforce
+        if (Time.time < startSlideTime + maxSlideTime)
+            rig.AddRelativeForce(startDirection * startDirectionMoveSpeed, ForceMode.Acceleration);
+        else
+            StopCrouchSlide();
+    }
+
+    void WhileCrouchInAir()
+    {
         if (canSlam)
-        {
-            rig.AddForce(-transform.up * crouchDownForce, ForceMode.Acceleration);
-        }
-
-        if (unCrouchCheck)
-        {
-            if (!Physics.Raycast(crouchContainer.position, Vector3.up, unCrouchRaycastLengh, unCrouchLayerMask))
-            {
-                unCrouchCheck = false;
-                StopCrouch();
-            }
-        }
-
-        Debug.Log("While Crouch");
+            rig.AddForce(Vector3.down * crouchDownForce, ForceMode.Acceleration);
     }
 
-    void StopCrouch() // Called when crouch input is released
+    void WhileSlideInAir()
     {
-        if (Physics.Raycast(crouchContainer.position, Vector3.up, unCrouchRaycastLengh, unCrouchLayerMask))
-        {
-            unCrouchCheck = true;
-            return;
-        }
-        canSlam = false;
-
-        crouchState = CrouchState.Standing;
         
-        Debug.Log("Stop Crouch");
+    }
 
-        movementScript.crouching = false;
+    public void Slam(Collision other)
+    {
+        if (!canSlam)
+            return;
+        canSlam = false;
+        // bouncy
+        rig.AddForce(other.GetContact(0).normal * groundSlamForce, ForceMode.Impulse);
 
-        animController.UnCrouch();
+        // actionate
+        switch (slamAction)
+        {
+            case SlamAction.Explode:
+                Boom.Explode(other.GetContact(0).point, actionRadius, actionForce, explosionUpForce);
+                break;
+            case SlamAction.Implode:
+                Boom.Implode(other.GetContact(0).point, actionRadius, actionForce);
+                break;
+        }
 
-        capsuleCollider.material = normalPhysicsMaterial;
+        onGroundSlam.Invoke();
+    }
+
+    void StopCrouchSlide()
+    {
+        commonVariables.SetCrouchState(CrouchState.Standing);
+        onUnCrouchSlide.Invoke();
+        canSlam = false;
+        waitForGroundSlide = false;
     }
 
     // Helper methods for NaughtyAttributes
-    private bool IsSlamActionExplodeOrImplode()
+    bool IsSlamActionExplodeOrImplode()
     {
         return slamAction == SlamAction.Explode || slamAction == SlamAction.Implode;
     }
 
-    private bool IsSlamActionExplode()
+    bool IsSlamActionExplode()
     {
         return slamAction == SlamAction.Explode;
     }

@@ -3,76 +3,77 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Events;
 
 public class Dashing : MonoBehaviour
 {
-    AnimationController animController;
-    Movement movementScript;
-    
-    [SerializeField] float dashDelay = 1;
+    [Header("Force-Related Settings")]
     [SerializeField] [Range(0, 15000)] float dashForce;
+    [SerializeField][Range(0, 3)] float dashVelocityMultiplier;
 
-    [SerializeField] Transform cameraContainer;
-    
+    [Header("Time-Related Settings")]
+    [SerializeField] float dashDelay = 1;
+    [SerializeField] float dashTime;
     float lastDashTime;
+    
+    [Header("References")]
+    [SerializeField] Transform dashCameraContainer;
     Rigidbody rig;
+    CommonVariables commonVariables;
+
+    [Header("Events")]
+    public UnityEvent<MoveDirection> onDash = new UnityEvent<MoveDirection>();
 
     void Awake()
     {
-        animController = GetComponent<AnimationController>();
-        // Get Rigidbody Reference
+        // get component references
         rig = GetComponent<Rigidbody>();
-        // Get Movement Script Reference
-        movementScript = GetComponent<Movement>();
+        commonVariables = GetComponent<CommonVariables>();
     }
     public void OnDashInput(InputAction.CallbackContext context)
     {
         // Check if dash input pressed and dash delay passed
         if (context.phase == InputActionPhase.Performed && (Time.time - lastDashTime > dashDelay))
         {
-            StartDash();
+            StartCoroutine(StartDash());
         }   
     }
 
-    void StartDash()
+    IEnumerator StartDash()
     {
-        // Apply dash force in direction
-        switch (movementScript.moveDirection)
+        MoveDirection moveDirection = commonVariables.GetMoveDirection();
+        onDash.Invoke(moveDirection);
+
+        Vector3 startVelocity = rig.velocity;
+        switch (moveDirection)
         {
-            case Movement.MoveDirection.Forward:
-                rig.AddForce(cameraContainer.forward * dashForce, ForceMode.Impulse);
-                animController.DashForward();
+            case MoveDirection.Forward:
+                rig.AddForce(dashCameraContainer.forward * dashForce, ForceMode.Impulse);
                 break;
-            case Movement.MoveDirection.ForwardRight:
-                rig.AddForce((cameraContainer.forward + cameraContainer.right) * dashForce, ForceMode.Impulse);
-                animController.DashForwardRight();
+            case MoveDirection.ForwardRight:
+                rig.AddForce((dashCameraContainer.forward + dashCameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
-            case Movement.MoveDirection.Right:
+            case MoveDirection.Right:
                 rig.AddForce(transform.right * dashForce, ForceMode.Impulse);
-                animController.DashRight();
                 break;
-            case Movement.MoveDirection.BackRight:
-                rig.AddForce((-cameraContainer.forward + cameraContainer.right) * dashForce, ForceMode.Impulse);
-                animController.DashBackLeft();
+            case MoveDirection.BackRight:
+                rig.AddForce((-dashCameraContainer.forward + dashCameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
-            case Movement.MoveDirection.Back:
-                rig.AddForce(-cameraContainer.forward * dashForce, ForceMode.Impulse);
-                animController.DashBack();
+            case MoveDirection.Back:
+                rig.AddForce(-dashCameraContainer.forward * dashForce, ForceMode.Impulse);
                 break;
-            case Movement.MoveDirection.BackLeft:
-                rig.AddForce((-cameraContainer.forward + -cameraContainer.right) * dashForce, ForceMode.Impulse);
-                animController.DashBackLeft();
+            case MoveDirection.BackLeft:
+                rig.AddForce((-dashCameraContainer.forward + -dashCameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
-            case Movement.MoveDirection.Left:
-                rig.AddForce(-cameraContainer.right * dashForce, ForceMode.Impulse);
-                animController.DashLeft();
+            case MoveDirection.Left:
+                rig.AddForce(-dashCameraContainer.right * dashForce, ForceMode.Impulse);
                 break;
-            case Movement.MoveDirection.ForwardLeft:
-                rig.AddForce((cameraContainer.forward + -cameraContainer.right) * dashForce, ForceMode.Impulse);
-                animController.DashForwardLeft();
+            case MoveDirection.ForwardLeft:
+                rig.AddForce((dashCameraContainer.forward + -dashCameraContainer.right) * dashForce, ForceMode.Impulse);
                 break;
         }
-
+        yield return new WaitForSeconds(dashTime);
+        rig.velocity = startVelocity * dashVelocityMultiplier;
         lastDashTime = Time.time;
     }
 }

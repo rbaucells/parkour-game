@@ -43,7 +43,7 @@ public class SpecialAkRaycastShooting : MonoBehaviour
     [SerializeField] InputActionReference fireInput;
     [SerializeField] Transform attackPoint1;
     [SerializeField] Transform attackPoint2;
-    Transform cameraContainer;
+    Transform aimingCameraContainer;
     Reloading reloadingScript;
     Audio audioPlayer;
     Rigidbody playerRig;
@@ -60,7 +60,7 @@ public class SpecialAkRaycastShooting : MonoBehaviour
         timeBetweenShots = 60/fireRate;
         Debug.Log ("Time Between Shots: " + timeBetweenShots);
 
-        cameraContainer = GameObject.Find("Camera Container").transform;
+        aimingCameraContainer = GameObject.Find("Aiming Camera Container").transform;
         reloadingScript = GetComponent<Reloading>();
 
         playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
@@ -130,7 +130,7 @@ public class SpecialAkRaycastShooting : MonoBehaviour
         Instantiate(muzzleFlash, attackPoint2.position, attackPoint2.rotation);
 
 
-        playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
+        playerRig.AddForce(-aimingCameraContainer.forward * knockBackForce, ForceMode.Impulse);
     }
 
     void RaycastFire()
@@ -172,9 +172,9 @@ public class SpecialAkRaycastShooting : MonoBehaviour
 
     Vector3 GetTargetPoint1()
     {
-        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), cameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), cameraContainer.right) * cameraContainer.forward;
+        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), aimingCameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), aimingCameraContainer.right) * aimingCameraContainer.forward;
 
-        Ray preRay = new(cameraContainer.position, direction.normalized);
+        Ray preRay = new(aimingCameraContainer.position, direction.normalized);
         
         Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
 
@@ -189,9 +189,9 @@ public class SpecialAkRaycastShooting : MonoBehaviour
     }
     Vector3 GetTargetPoint2()
     {
-        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), -cameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), -cameraContainer.right) * -cameraContainer.forward;
+        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), -aimingCameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), -aimingCameraContainer.right) * -aimingCameraContainer.forward;
 
-        Ray preRay = new(cameraContainer.position, direction.normalized);
+        Ray preRay = new(aimingCameraContainer.position, direction.normalized);
         
         Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
 

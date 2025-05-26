@@ -1,49 +1,9 @@
 fileFormatVersion: 2
-guid: fb1357317934c444bb279573af5dacc0
+guid: 819c802cb61f8ba498ab304ea8709c58
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Inner Sections.004
-    second: {fileID: 2100000, guid: 9288093e84e584121955c9a57d89892b, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Inner Sections.005
-    second: {fileID: 2100000, guid: 9288093e84e584121955c9a57d89892b, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Main
-    second: {fileID: 2100000, guid: ea75ad956442e4c10b9de5e7a48a79c4, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Main.004
-    second: {fileID: 2100000, guid: ea75ad956442e4c10b9de5e7a48a79c4, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Main.005
-    second: {fileID: 2100000, guid: ea75ad956442e4c10b9de5e7a48a79c4, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Main.007
-    second: {fileID: 2100000, guid: ea75ad956442e4c10b9de5e7a48a79c4, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Main.008
-    second: {fileID: 2100000, guid: ea75ad956442e4c10b9de5e7a48a79c4, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Sights.004
-    second: {fileID: 2100000, guid: c91d51f903b1643f5965c13317499718, type: 2}
+  externalObjects: {}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -73,7 +33,7 @@ ModelImporter:
     isReadable: 0
   meshes:
     lODScreenPercentages: []
-    globalScale: 1
+    globalScale: 0.4
     meshCompression: 0
     addColliders: 0
     useSRGBMaterialColor: 1
@@ -128,7 +88,7 @@ ModelImporter:
     armStretch: 0.05
     legStretch: 0.05
     feetSpacing: 0
-    globalScale: 1
+    globalScale: 0.004
     rootMotionBoneName: 
     hasTranslationDoF: 0
     hasExtraRoot: 0

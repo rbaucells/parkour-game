@@ -38,7 +38,7 @@ public class ProjectileShooting : MonoBehaviour
     [SerializeField] InputActionReference fireInput;
     [SerializeField] Transform attackPoint;
     [SerializeField] GameObject muzzleFlash;
-    Transform cameraContainer;
+    Transform aimingCameraContainer;
     Reloading reloadingScript;
     Audio audioPlayer;
     Rigidbody playerRig;
@@ -52,7 +52,7 @@ public class ProjectileShooting : MonoBehaviour
         timeBetweenShots = 60/fireRate;
         Debug.Log ("Time Between Shots: " + timeBetweenShots);
 
-        cameraContainer = GameObject.Find("Camera Container").transform;
+        aimingCameraContainer = GameObject.Find("Aiming Camera Container").transform;
         reloadingScript = GetComponent<Reloading>();
 
         playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
@@ -121,7 +121,7 @@ public class ProjectileShooting : MonoBehaviour
 
         Instantiate(muzzleFlash, attackPoint.position, attackPoint.rotation);
 
-        playerRig.AddForce(-cameraContainer.forward * knockBackForce, ForceMode.Impulse);
+        playerRig.AddForce(-aimingCameraContainer.forward * knockBackForce, ForceMode.Impulse);
     }
 
     void ProjectileFire()
@@ -139,9 +139,9 @@ public class ProjectileShooting : MonoBehaviour
 
     Vector3 GetTargetPoint()
     {
-        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), cameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), cameraContainer.right) * cameraContainer.forward;
+        Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), aimingCameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), aimingCameraContainer.right) * aimingCameraContainer.forward;
 
-        Ray preRay = new(cameraContainer.position , direction.normalized);
+        Ray preRay = new(aimingCameraContainer.position , direction.normalized);
         
         Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
 

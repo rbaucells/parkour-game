@@ -3,50 +3,62 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Events;
+using Unity.VisualScripting;
 
 public class Jumping : MonoBehaviour
 {
-    [HideInInspector] public bool jumpHeld;
+    [Header("Jump Count")]
+    [SerializeField] int maxAirJumps;
+    int remainingAirJumps;
+    bool jumpHeld;
+    
+    [Header("Force Settings")]
     [SerializeField] float groundJumpForce;
     [SerializeField] float airJumpForce;
     [SerializeField] float wallJumpForce;
-    GroundCheck groundCheckScript;
 
-    [Range(0,1)] [SerializeField] float cayoteTime;
+    [Header("Cayote Time")]
+    [Range(0, 1)] [SerializeField] float cayoteTime;
+    bool usedCayoteTime;
+    float lastGroundedTime;
 
-    [HideInInspector] public bool usedCayoteTime;
+    [Header("Jump Buffering")]
+    [SerializeField] float raycastLenght;
+    [SerializeField] LayerMask layerMask;
+    bool inJumpBuffer = false;
+    Coroutine jumpBufferCoroutine;
 
-    public int maxAirJumps;
-    [HideInInspector] public int remainingAirJumps;
+    [Header("Events")]
+    public UnityEvent onGroundJump = new UnityEvent();
+    public UnityEvent onWallJump = new UnityEvent();
+    public UnityEvent onAirJump = new UnityEvent();
 
+    // component references
     Rigidbody rig;
-    AnimationController animController;
-    
+    CommonVariables commonVariables;
+    CapsuleCollider capsuleCollider;
     void Awake()
     {
-        animController = GetComponent<AnimationController>();
-        // Get Rigidbody Reference
         rig = GetComponent<Rigidbody>();
-        // Set Default AirJumps
+        commonVariables = GetComponent<CommonVariables>();
+        capsuleCollider = GetComponent<CapsuleCollider>();
         remainingAirJumps = maxAirJumps;
-        // Get GroundCheck Script Reference
-        groundCheckScript = GetComponent<GroundCheck>();
     }
 
     public void OnJumpInput(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Performed)
         {
-            // Determine Which Type of Jump to do
-            switch (groundCheckScript.groundState)
+            switch (commonVariables.GetGroundState())
             {
-                case GroundCheck.GroundState.Grounded:
+                case GroundState.Grounded:
                     GroundedJump();
                     break;
-                case GroundCheck.GroundState.Airborne:
+                case GroundState.Airborne:
                     AirborneJump();
                     break;
-                case GroundCheck.GroundState.WallGrounded:
+                case GroundState.WallGrounded:
                     WallJump();
                     break;
             }
@@ -61,18 +73,15 @@ public class Jumping : MonoBehaviour
 
     public void GroundedJump()
     {
-        Debug.Log("Ground Jump");
         rig.AddForce(transform.up * groundJumpForce, ForceMode.Impulse);
-
+        onGroundJump.Invoke();
         usedCayoteTime = true;
-
-        animController.Jump();
     }
 
     void AirborneJump()
     {
-        Debug.Log("Airborn Jump");
-        if (groundCheckScript.lastGroundedTime + cayoteTime > Time.time && !usedCayoteTime)
+
+        if (lastGroundedTime + cayoteTime > Time.time && !usedCayoteTime)
         {
             if (rig.velocity.y < 0)
             {
@@ -81,9 +90,12 @@ public class Jumping : MonoBehaviour
             rig.AddForce(transform.up * groundJumpForce, ForceMode.Impulse);
             usedCayoteTime = true;
 
-            animController.Jump();
+            onAirJump.Invoke();
         }
-        // If we Haven't ran out of AirJumps
+        else if (Physics.Raycast(new Vector3(transform.position.x, (transform.position.y + capsuleCollider.center.y) - capsuleCollider.height / 2, transform.position.z), Vector3.down, raycastLenght, layerMask) && !inJumpBuffer)
+        {
+            jumpBufferCoroutine = StartCoroutine(JumpBuffer());
+        }
         else if (remainingAirJumps > 0)
         {
             if (rig.velocity.y < 0)
@@ -94,32 +106,63 @@ public class Jumping : MonoBehaviour
             rig.AddForce(transform.up * airJumpForce, ForceMode.Impulse);
             remainingAirJumps--;
 
-            animController.Jump();
+            onAirJump.Invoke();
+        }
+    }
+
+    IEnumerator JumpBuffer()
+    {
+        inJumpBuffer = true;
+        yield return new WaitUntil(() => commonVariables.GetGroundState() == GroundState.Grounded);
+        GroundedJump();
+        inJumpBuffer = false;
+    }
+
+    public void CancelJumpBuffer()
+    {
+        if (inJumpBuffer)
+        {
+            StopCoroutine(jumpBufferCoroutine);
         }
     }
 
     void WallJump()
     {
+        onWallJump.Invoke();
         usedCayoteTime = true;
 
-        Debug.Log("Wall Jump");
-        // Jump Depending on WallSide
-        switch (groundCheckScript.wallState)
+        switch (commonVariables.GetWallState())
         {
-            case GroundCheck.WallState.Right:
+            case WallState.Right:
                 rig.AddForce((-transform.right + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
-            case GroundCheck.WallState.Left:
+            case WallState.Left:
                 rig.AddForce((transform.right + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
-            case GroundCheck.WallState.Front:
+            case WallState.Front:
                 rig.AddForce((-transform.forward + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
-            case GroundCheck.WallState.Back:
+            case WallState.Back:
                 rig.AddForce((transform.forward + transform.up) * wallJumpForce, ForceMode.Impulse);
                 break;
         }
+    }
 
-        animController.Jump();
+    public void JumpIfHeld()
+    {
+        if (jumpHeld)
+            GroundedJump();
+        RegenerateAirJumpsAndCayote();
+    }
+
+    public void RegenerateAirJumpsAndCayote()
+    {
+        remainingAirJumps = maxAirJumps;
+        usedCayoteTime = false;
+    }
+
+    public void SetLastGroundTime()
+    {
+        lastGroundedTime = Time.time;
     }
 }

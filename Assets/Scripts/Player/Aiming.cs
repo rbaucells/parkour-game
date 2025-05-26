@@ -11,24 +11,26 @@ public class Aiming : MonoBehaviour
         Keyboard,
         Controller
     }
+    InputType inputType = InputType.Keyboard;
+
+    [Header("Look Sensitivity")]
 
     [SerializeField] [Range(0, 100)] float controllerLookSens;
     [SerializeField] [Range(0, 10)] float mouseLookSens; 
+    float lookSenseToUse;
 
-    float lookSenseToUse; // Depends on inputType
+    [Header("Look Range")]
+    [SerializeField] [MinMaxSlider(-180, 180)] Vector2 lookXRange;
+    float curCameraX;
+    Vector2 deltaMouseValue;
 
-    [SerializeField] [MinMaxSlider(-180, 180)] Vector2 lookXRange; // X Rotation Range
-
-    [SerializeField] Transform cameraContainer;
-
-    InputType inputType = InputType.Keyboard;
-
-    Vector2 deltaMouseValue; // Look Input from Player
-    float curCameraX; // Current X Rotation of Camera
+    [Header("Containers")]
+    [SerializeField] Transform aimingCameraContainer;
+    [SerializeField] Transform aimingWeaponContainer;
 
     void Start()
     {
-        // Set Look Sensitivity depending on inputType
+        // is there a gamepad connected, if so use controllerLookSens, else mouseLookSens
         if (Gamepad.current != null)
         {
             inputType = InputType.Controller;
@@ -39,27 +41,26 @@ public class Aiming : MonoBehaviour
             inputType = InputType.Keyboard;
             lookSenseToUse = mouseLookSens;
         }
-        // Lock Cursor
+
+        // lock cursor to window        
         Cursor.lockState = CursorLockMode.Locked;
     }
     public void OnLookInput(InputAction.CallbackContext context)
     {
-        // Store Delta Look Value
+        // store mouse move value
         deltaMouseValue = context.ReadValue<Vector2>();
     }
 
     void LateUpdate()
     {
-        // Add Delta Mouse Value to previous Value
         curCameraX += deltaMouseValue.y * lookSenseToUse;
 
-        // Clamp it to MinMax
         curCameraX = Mathf.Clamp(curCameraX, lookXRange.x, lookXRange.y);
 
-        // Rotate CameraContainer Up/Down
-        cameraContainer.localEulerAngles = new Vector3(-curCameraX, 0, 0);
-
-        // Rotate player Left/Right
+        // rotate aimingCameraContainer up/down
+        aimingCameraContainer.localEulerAngles = new Vector3(-curCameraX, 0, 0);
+        aimingWeaponContainer.localEulerAngles = new Vector3(-curCameraX, 0, 0);
+        // rotate player left/right
         transform.eulerAngles += new Vector3(0, deltaMouseValue.x * lookSenseToUse, 0);
     }
 }
