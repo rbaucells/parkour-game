@@ -50,10 +50,59 @@ public class Movement : MonoBehaviour
         // Store the input value
         if (context.phase == InputActionPhase.Performed)
         {
-            commonVariables.SetMoveInput(context.ReadValue<Vector2>());
+            Vector2 moveInput = context.ReadValue<Vector2>();
+            MoveDirection moveDirection;
+
+            if (moveInput.y > MOVE_THRESHOLD)
+            {
+                if (moveInput.x > MOVE_THRESHOLD)
+                {
+                    moveDirection = MoveDirection.ForwardRight;
+                }
+                else if (moveInput.x < -MOVE_THRESHOLD)
+                {
+                    moveDirection = MoveDirection.ForwardLeft;
+                }
+                else
+                {
+                    moveDirection = MoveDirection.Forward;
+                }
+            }
+            else if (moveInput.y < -MOVE_THRESHOLD)
+            {
+                if (moveInput.x > MOVE_THRESHOLD)
+                {
+                    moveDirection = MoveDirection.BackRight;
+                }
+                else if (moveInput.x < -MOVE_THRESHOLD)
+                {
+                    moveDirection = MoveDirection.BackLeft;
+                }
+                else
+                {
+                    moveDirection = MoveDirection.Back;
+                }
+            }
+            else if (moveInput.x > MOVE_THRESHOLD)
+            {
+                moveDirection = MoveDirection.Right;
+            }
+            else if (moveInput.x < -MOVE_THRESHOLD)
+            {
+                moveDirection = MoveDirection.Left;
+            }
+            else
+            {
+                moveDirection = MoveDirection.None;
+            }
+            commonVariables.SetMoveDirection(moveDirection);
+            commonVariables.SetMoveInput(moveInput);
         }
         else if (context.phase == InputActionPhase.Canceled)
         {
+            commonVariables.SetMoveInput(Vector2.zero);
+
+            commonVariables.SetMoveDirection(MoveDirection.None);
             commonVariables.SetMoveInput(Vector2.zero);
         }
     }
@@ -96,94 +145,76 @@ public class Movement : MonoBehaviour
     void WhileMoving()
     {
         GroundState groundState = commonVariables.GetGroundState();
-        CrouchState crouchState = commonVariables.GetCrouchState();
-        WallState wallState = commonVariables.GetWallState();
-        MoveDirection moveDirection = commonVariables.GetMoveDirection();
-
         switch (groundState)
         {
             case GroundState.Grounded:
-                if (crouchState == CrouchState.Crouched)
-                {
-                    rig.AddRelativeForce(new Vector3(commonVariables.GetMoveInput().x, 0, commonVariables.GetMoveInput().y) * crouchMoveSpeed, ForceMode.Acceleration);
-                }
-                else if (crouchState == CrouchState.Sliding)
-                {
-                    rig.AddRelativeForce(new Vector3(commonVariables.GetMoveInput().x, 0, commonVariables.GetMoveInput().y) * slideMoveSpeed, ForceMode.Acceleration);
-                }
-                else
-                {
-                    rig.AddRelativeForce(new Vector3(commonVariables.GetMoveInput().x, 0, commonVariables.GetMoveInput().y) * onGroundMoveSpeed, ForceMode.Acceleration);
-                }
+                GroundedMove();
                 break;
             case GroundState.WallGrounded:
-                Vector2 correctedInput = commonVariables.GetMoveInput();
-                if (wallState == WallState.Right)
-                {
-                    correctedInput = new Vector2(Mathf.Clamp(commonVariables.GetMoveInput().x, -1, 0), commonVariables.GetMoveInput().y);
-                }
-                else if (wallState == WallState.Left)
-                {
-                    correctedInput = new Vector2(Mathf.Clamp(commonVariables.GetMoveInput().x, 0, 1), commonVariables.GetMoveInput().y);
-                }
-
-                if (correctedInput.x == 0 && commonVariables.GetMoveInput().x != 0)
-                {
-                    if (moveDirection == MoveDirection.Forward || moveDirection == MoveDirection.ForwardRight || moveDirection == MoveDirection.ForwardLeft)
-                        correctedInput.y = Mathf.Sqrt(Mathf.Clamp01(1 - (commonVariables.GetMoveInput().x * commonVariables.GetMoveInput().x))) * 1.4f;
-                    else if (moveDirection == MoveDirection.Back || moveDirection == MoveDirection.BackRight || moveDirection == MoveDirection.BackLeft)
-                        correctedInput.y = -Mathf.Sqrt(Mathf.Clamp01(1 - (commonVariables.GetMoveInput().x * commonVariables.GetMoveInput().x))) * 1.4f;
-                }
-                rig.AddRelativeForce(new Vector3(correctedInput.x, 0, correctedInput.y) * onWallMoveSpeed, ForceMode.Acceleration);
+                WallGroundedMove();
                 break;
             case GroundState.Airborne:
-                rig.AddRelativeForce(new Vector3(commonVariables.GetMoveInput().x, 0, commonVariables.GetMoveInput().y) * inAirMoveSpeed, ForceMode.Acceleration);
+                AirborneMove();
                 break;
         }
-        // Determine the direction of movement
-        if (commonVariables.GetMoveInput().y > MOVE_THRESHOLD)
+    }
+
+    void GroundedMove()
+    {
+        Vector2 moveInput = commonVariables.GetMoveInput();
+        Vector3 moveVector = new(moveInput.x, 0, moveInput.y);
+        Vector3 groundNormal = commonVariables.GetGroundNormal();
+
+        Vector3 projectedVector = Vector3.ProjectOnPlane(moveVector, groundNormal);
+
+        Vector3 correctedMagnitudeVector = projectedVector * (moveVector.magnitude / projectedVector.magnitude);
+
+        CrouchState crouchState = commonVariables.GetCrouchState();
+
+        switch (crouchState)
         {
-            if (commonVariables.GetMoveInput().x > MOVE_THRESHOLD)
-            {
-                moveDirection = MoveDirection.ForwardRight;
-            }
-            else if (commonVariables.GetMoveInput().x < -MOVE_THRESHOLD)
-            {
-                moveDirection = MoveDirection.ForwardLeft;
-            }
-            else
-            {
-                moveDirection = MoveDirection.Forward;
-            }
+            case CrouchState.Standing:
+                rig.AddRelativeForce(correctedMagnitudeVector * onGroundMoveSpeed, ForceMode.Acceleration);
+                break;
+            case CrouchState.Crouched:
+                rig.AddRelativeForce(correctedMagnitudeVector * crouchMoveSpeed, ForceMode.Acceleration);
+                break;
+            case CrouchState.Sliding:
+                rig.AddRelativeForce(correctedMagnitudeVector * slideMoveSpeed, ForceMode.Acceleration);
+                break;
+
         }
-        else if (commonVariables.GetMoveInput().y < -MOVE_THRESHOLD)
+    }
+
+    void WallGroundedMove()
+    {
+        Vector2 correctedInput = commonVariables.GetMoveInput();
+        WallState wallState = commonVariables.GetWallState();
+        MoveDirection moveDirection = commonVariables.GetMoveDirection();
+
+        if (wallState == WallState.Right)
         {
-            if (commonVariables.GetMoveInput().x > MOVE_THRESHOLD)
-            {
-                moveDirection = MoveDirection.BackRight;
-            }
-            else if (commonVariables.GetMoveInput().x < -MOVE_THRESHOLD)
-            {
-                moveDirection = MoveDirection.BackLeft;
-            }
-            else
-            {
-                moveDirection = MoveDirection.Back;
-            }
+            correctedInput = new Vector2(Mathf.Clamp(commonVariables.GetMoveInput().x, -1, 0), commonVariables.GetMoveInput().y);
         }
-        else
+        else if (wallState == WallState.Left)
         {
-            if (commonVariables.GetMoveInput().x > MOVE_THRESHOLD)
-            {
-                moveDirection = MoveDirection.Right;
-            }
-            else if (commonVariables.GetMoveInput().x < -MOVE_THRESHOLD)
-            {
-                moveDirection = MoveDirection.Left;
-            }
+            correctedInput = new Vector2(Mathf.Clamp(commonVariables.GetMoveInput().x, 0, 1), commonVariables.GetMoveInput().y);
         }
 
-        commonVariables.SetMoveDirection(moveDirection);
+        if (correctedInput.x == 0 && commonVariables.GetMoveInput().x != 0)
+        {
+            if (moveDirection == MoveDirection.Forward || moveDirection == MoveDirection.ForwardRight || moveDirection == MoveDirection.ForwardLeft)
+                correctedInput.y = Mathf.Sqrt(Mathf.Clamp01(1 - (commonVariables.GetMoveInput().x * commonVariables.GetMoveInput().x))) * 1.4f;
+            else if (moveDirection == MoveDirection.Back || moveDirection == MoveDirection.BackRight || moveDirection == MoveDirection.BackLeft)
+                correctedInput.y = -Mathf.Sqrt(Mathf.Clamp01(1 - (commonVariables.GetMoveInput().x * commonVariables.GetMoveInput().x))) * 1.4f;
+        }
+        rig.AddRelativeForce(new Vector3(correctedInput.x, 0, correctedInput.y) * onWallMoveSpeed, ForceMode.Acceleration);
+    }
+
+    void AirborneMove()
+    {
+        Vector2 moveInput = commonVariables.GetMoveInput();
+        rig.AddRelativeForce(new Vector3(moveInput.x, 0, moveInput.y) * inAirMoveSpeed, ForceMode.Acceleration);
     }
 
     void StopMoving()
@@ -192,6 +223,7 @@ public class Movement : MonoBehaviour
         commonVariables.SetMoveDirection(MoveDirection.None);
     }
 
+    // Drag Functions
     public void SetDragGround()
     {
         rig.drag = groundedDrag;
@@ -208,12 +240,10 @@ public class Movement : MonoBehaviour
     {
         rig.drag = crouchedDrag;
     }
-
     public void SetDragSlide()
     {
         rig.drag = slideDrag;
     }
-
     public void SetDragUnCrouch()
     {
         switch (commonVariables.GetGroundState())

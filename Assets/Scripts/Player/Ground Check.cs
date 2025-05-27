@@ -217,18 +217,21 @@ public class GroundCheck : MonoBehaviour
     {
         commonVariables.SetGroundState(GroundState.Grounded);
         onAirborneToGrounded.Invoke(other);
+        commonVariables.SetGroundNormal(other.GetContact(0).normal);
     }
 
     void GroundedToAirborne()
     {
         commonVariables.SetGroundState(GroundState.Airborne);
         onGroundedToAirborne.Invoke();
+        commonVariables.SetGroundNormal(Vector3.zero);
     }
 
     void WallGroundedToGrounded(Collision other)
     {
         commonVariables.SetGroundState(GroundState.Grounded);
         onWallGroundedToGrounded.Invoke();
+        commonVariables.SetGroundNormal(other.GetContact(0).normal);
     }
 
     void AirborneToWallGrounded()

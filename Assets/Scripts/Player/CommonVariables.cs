@@ -46,6 +46,7 @@ public class CommonVariables : MonoBehaviour
     CrouchState crouchState = CrouchState.Standing;
 
     Vector2 moveInput;
+    Vector3 groundNormal;
 
     public void SetCrouchState(CrouchState state)
     {
@@ -69,6 +70,16 @@ public class CommonVariables : MonoBehaviour
     public void SetMoveInput(Vector2 input)
     {
         moveInput = input;
+    }
+
+    public void SetGroundNormal(Vector3 normal)
+    {
+        groundNormal = normal;
+    }
+
+    public Vector3 GetGroundNormal()
+    {
+        return groundNormal;
     }
 
     public MoveDirection GetMoveDirection()

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.43811837, g: 0.48611462, b: 0.5663912, a: 1}
+  m_IndirectSpecularColor: {r: 0.4381181, g: 0.4861142, b: 0.56639045, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -8110,9 +8110,9 @@ MonoBehaviour:
   explosionUpForce: 0
   groundSlamForce: 35
   maxSlideTime: 0.7
-  startDirectionMoveSpeed: 20
-  startImpulse: 22
-  endVelocityMultiplier: 2
+  startDirectionMoveSpeed: 15
+  startImpulse: 17
+  endVelocityMultiplier: 1
   crouchDownForce: 120
   unCrouchRaycastLengh: 1.25
   unCrouchLayerMask:
