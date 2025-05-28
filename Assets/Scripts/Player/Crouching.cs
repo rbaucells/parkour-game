@@ -34,6 +34,7 @@ public class Crouching : MonoBehaviour
     [SerializeField] float startDirectionMoveSpeed;
     [SerializeField] float startImpulse;
     [SerializeField] float endVelocityMultiplier;
+    [SerializeField] float maxSlideSpeed;
     bool waitForGroundSlide;
     Vector3 startDirection;
 
@@ -171,9 +172,16 @@ public class Crouching : MonoBehaviour
     void WhileSlideOnGround()
     {
         if (Time.time < startSlideTime + maxSlideTime)
-            rig.AddRelativeForce(startDirection * startDirectionMoveSpeed, ForceMode.Acceleration);
-        else
-            StopCrouchSlide();
+        {
+            if (rig.velocity.magnitude < maxSlideSpeed)
+            {
+                rig.AddRelativeForce(startDirection * startDirectionMoveSpeed, ForceMode.Acceleration);
+            }
+        }
+            else
+            {
+                StopCrouchSlide();
+            }
     }
 
     void WhileCrouchInAir()

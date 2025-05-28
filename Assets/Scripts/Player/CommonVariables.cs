@@ -47,6 +47,7 @@ public class CommonVariables : MonoBehaviour
 
     Vector2 moveInput;
     Vector3 groundNormal;
+    Vector3 wallNormal;
 
     public void SetCrouchState(CrouchState state)
     {
@@ -77,6 +78,15 @@ public class CommonVariables : MonoBehaviour
         groundNormal = normal;
     }
 
+    public void SetWallNormal(Vector3 normal)
+    {
+        wallNormal = normal;
+    }
+
+    public Vector3 GetWallNormal()
+    {
+        return wallNormal;
+    }
     public Vector3 GetGroundNormal()
     {
         return groundNormal;

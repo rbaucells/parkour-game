@@ -188,27 +188,54 @@ public class Movement : MonoBehaviour
 
     void WallGroundedMove()
     {
-        Vector2 correctedInput = commonVariables.GetMoveInput();
         WallState wallState = commonVariables.GetWallState();
-        MoveDirection moveDirection = commonVariables.GetMoveDirection();
+        Vector2 moveInput = commonVariables.GetMoveInput();
 
-        if (wallState == WallState.Right)
+        if (wallState == WallState.Left || wallState == WallState.Right)
         {
-            correctedInput = new Vector2(Mathf.Clamp(commonVariables.GetMoveInput().x, -1, 0), commonVariables.GetMoveInput().y);
+            Vector3 wallNormal = commonVariables.GetWallNormal();
+            Vector3 forwardVector = Vector3.ProjectOnPlane(transform.forward, wallNormal).normalized;
+
+            Vector3 moveVector = ((forwardVector * moveInput.y)).normalized * onWallMoveSpeed;
+
+            switch (wallState)
+            {
+                case WallState.Right:
+                    if (moveInput.x < 0)
+                    {
+                        rig.AddRelativeForce(moveInput * onWallMoveSpeed, ForceMode.Acceleration);
+                    }
+                    break;
+                case WallState.Left:
+                    if (moveInput.x > 0)
+                    {
+                        rig.AddRelativeForce(moveInput * onWallMoveSpeed, ForceMode.Acceleration);
+                    }
+                    break;
+            }
+
+            rig.AddForce(moveVector, ForceMode.Acceleration);
         }
-        else if (wallState == WallState.Left)
+        else
         {
-            correctedInput = new Vector2(Mathf.Clamp(commonVariables.GetMoveInput().x, 0, 1), commonVariables.GetMoveInput().y);
+            switch (wallState)
+            {
+                case WallState.Back:
+                    if (moveInput.y > 0)
+                    {
+                        rig.AddRelativeForce(new(0, 0, moveInput.y * onWallMoveSpeed), ForceMode.Acceleration);
+                    }
+                    break;
+                case WallState.Front:
+                    if (moveInput.y < 0)
+                    {
+                        rig.AddRelativeForce(new(0, 0, moveInput.y * onWallMoveSpeed), ForceMode.Acceleration);
+                    }
+                    break;
+            }
         }
 
-        if (correctedInput.x == 0 && commonVariables.GetMoveInput().x != 0)
-        {
-            if (moveDirection == MoveDirection.Forward || moveDirection == MoveDirection.ForwardRight || moveDirection == MoveDirection.ForwardLeft)
-                correctedInput.y = Mathf.Sqrt(Mathf.Clamp01(1 - (commonVariables.GetMoveInput().x * commonVariables.GetMoveInput().x))) * 1.4f;
-            else if (moveDirection == MoveDirection.Back || moveDirection == MoveDirection.BackRight || moveDirection == MoveDirection.BackLeft)
-                correctedInput.y = -Mathf.Sqrt(Mathf.Clamp01(1 - (commonVariables.GetMoveInput().x * commonVariables.GetMoveInput().x))) * 1.4f;
-        }
-        rig.AddRelativeForce(new Vector3(correctedInput.x, 0, correctedInput.y) * onWallMoveSpeed, ForceMode.Acceleration);
+        // if camera facing too far away from wall, leave it.
     }
 
     void AirborneMove()

@@ -20,7 +20,8 @@ public class GroundCheck : MonoBehaviour
     public UnityEvent onGroundedToAirborne = new UnityEvent();
     public UnityEvent onWallGroundedToAirborne = new UnityEvent();
     public UnityEvent onWallGroundedToGrounded = new UnityEvent();
-    
+    public UnityEvent<WallState> onWallStateChange = new UnityEvent<WallState>();
+
     // ground detection
     ISet<Collider> groundColliders = new HashSet<Collider>();
     const float GROUND_TOLERANCE = 0.3f;
@@ -124,7 +125,7 @@ public class GroundCheck : MonoBehaviour
             
             if (groundState == GroundState.Airborne && wallColliders.Any())
             {
-                AirborneToWallGrounded();
+                AirborneToWallGrounded(other);
             }
         }
     }
@@ -152,6 +153,7 @@ public class GroundCheck : MonoBehaviour
                     float dotBack = Vector3.Dot(normal, -transform.forward);
                     float dotLeft = Vector3.Dot(normal, -transform.right);
 
+                    WallState oldWallState = commonVariables.GetWallState();
                     if (dotForward > 0.5f)
                     {
                         wallColliders.Add(other.collider);
@@ -176,6 +178,9 @@ public class GroundCheck : MonoBehaviour
                     {
                         commonVariables.SetWallState(WallState.None);
                     }
+                    
+                    if (oldWallState != commonVariables.GetWallState())
+                        onWallStateChange.Invoke(commonVariables.GetWallState());
                 }
                 else
                 {
@@ -185,7 +190,7 @@ public class GroundCheck : MonoBehaviour
             }
             if (groundState == GroundState.Airborne && wallColliders.Any())
             {
-                AirborneToWallGrounded();
+                AirborneToWallGrounded(other);
             }
         }
     }
@@ -234,14 +239,16 @@ public class GroundCheck : MonoBehaviour
         commonVariables.SetGroundNormal(other.GetContact(0).normal);
     }
 
-    void AirborneToWallGrounded()
+    void AirborneToWallGrounded(Collision other)
     {
         commonVariables.SetGroundState(GroundState.WallGrounded);
         onAirborneToWallGrounded.Invoke(commonVariables.GetWallState());
+        commonVariables.SetWallNormal(other.GetContact(0).normal);
     }
 
     void WallGroundedToAirborne()
     {
+        commonVariables.SetWallNormal(Vector3.zero);
         commonVariables.SetGroundState(GroundState.Airborne);
         commonVariables.SetWallState(WallState.None);
         onWallGroundedToAirborne.Invoke();

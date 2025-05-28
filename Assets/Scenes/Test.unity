@@ -8113,6 +8113,7 @@ MonoBehaviour:
   startDirectionMoveSpeed: 15
   startImpulse: 17
   endVelocityMultiplier: 1
+  maxSlideSpeed: 30
   crouchDownForce: 120
   unCrouchRaycastLengh: 1.25
   unCrouchLayerMask:
@@ -8449,6 +8450,21 @@ MonoBehaviour:
         m_TargetAssemblyTypeName: AnimationController, Assembly-CSharp
         m_MethodName: WallRunOut
         m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onWallStateChange:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 7969007692901562865}
+        m_TargetAssemblyTypeName: AnimationController, Assembly-CSharp
+        m_MethodName: WallRunIn
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
