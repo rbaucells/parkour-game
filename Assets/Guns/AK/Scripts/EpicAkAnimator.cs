@@ -5,8 +5,6 @@ using UnityEngine;
 
 public class EpicAkAnimator : AbstractGunAnimator
 {
-    Audio audioPlayer;
-    Reloading reloading;
     Sequence fireSequence;
     Sequence reloadSequence;
 
@@ -15,11 +13,12 @@ public class EpicAkAnimator : AbstractGunAnimator
     [SerializeField] GameObject bullet;
     [SerializeField] Transform bulletFlapThingy;
 
+    [SerializeField] ObjectPool bulletObjectPool;
+
+    bool curReloading;
+
     void Start()
     {
-        audioPlayer = GetComponent<Audio>();
-        reloading = GetComponent<Reloading>();
-
         reloadSequence = DOTween.Sequence();
         fireSequence = DOTween.Sequence();
 
@@ -32,37 +31,44 @@ public class EpicAkAnimator : AbstractGunAnimator
             .Insert(0.15f, bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 1.21f), 0.05f)); // Move Bolt
 
         reloadSequence
-            .AppendCallback(() => StartCoroutine(SpawnBullets())) // Spawn bullets
-            .Append(bulletFlapThingy.DOLocalRotate(new Vector3(-70f, 0f, 0f), 0.2f))
-            .AppendInterval(0.057f * reloading.maxMagSize)
             .Append(bulletFlapThingy.DOLocalRotate(new Vector3(0, 0f, 0f), 0.2f))
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt
-            .AppendCallback(() => audioPlayer.PlaySound1())
+            .AppendCallback(() => PlayAudio.Invoke(0))
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 0.94f), 0.2f)) // Move Bolt
-            .AppendCallback(() => audioPlayer.PlaySound2())
+            .AppendCallback(() => PlayAudio.Invoke(1))
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 1.21f), 0.2f)) // Move Bolt
-            .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,0f), 0.2f)); // Rotate back to normal
-
+            .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,0f), 0.2f)) // Rotate back to normal
+            .AppendCallback(() => curReloading = false);
     }
 
     IEnumerator SpawnBullets()
     {
-        for (int i = 0; i < reloading.maxMagSize; i++)
+        for (int i = 0; i < 60; i++)
         {
-            GameObject bulletInstance = Instantiate(bullet, recoilOrigin);
+            GameObject bulletInstance = bulletObjectPool.GetObject();
             bulletInstance.GetComponent<Renderer>().material.DOFade(0.0f, 0.0f);
+            bulletInstance.transform.localPosition = new Vector3(0, 1.89f, 1.1f);
             bulletInstance.GetComponent<Renderer>().material.DOFade(1.0f, 0.2f);
             yield return new WaitForSeconds(0.05f);
             bulletInstance.transform.DOLocalMove(new Vector3(0f, 0.624f, 1.1f), 0.4f).OnStart(() =>
             {
-                audioPlayer.PlaySound3();
+                PlayAudio.Invoke(2);
             });
             bulletInstance.GetComponent<Renderer>().material.DOFade(0.0f, 0.75f).onComplete += () =>
             {
-                reloading.curMag++;
-                Destroy(bulletInstance);
+                addToMag.Invoke(1);
+                bulletObjectPool.ReleaseObject(bulletInstance);
             };
         }
+    }
+
+    IEnumerator ReloadCoroutine()
+    {
+        curReloading = true;
+        bulletFlapThingy.DOLocalRotate(new Vector3(-70f, 0f, 0f), 0.2f);
+        yield return StartCoroutine(SpawnBullets());
+        yield return new WaitForSeconds(0.4f);
+        reloadSequence.Restart();
     }
 
     public override void Fire()
@@ -72,11 +78,11 @@ public class EpicAkAnimator : AbstractGunAnimator
 
     public override void Reload()
     {
-        reloadSequence.Restart();
+        StartCoroutine(ReloadCoroutine());
     }
 
     public override bool IsReloading()
     {
-        return reloadSequence.IsPlaying();
+        return curReloading;
     }
 }

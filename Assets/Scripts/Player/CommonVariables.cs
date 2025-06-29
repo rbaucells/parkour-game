@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public enum MoveDirection
@@ -48,6 +49,9 @@ public class CommonVariables : MonoBehaviour
     Vector2 moveInput;
     Vector3 groundNormal;
     Vector3 wallNormal;
+    Vector3 slidingDirection;
+
+    bool stepingUp;
 
     public void SetCrouchState(CrouchState state)
     {
@@ -81,6 +85,26 @@ public class CommonVariables : MonoBehaviour
     public void SetWallNormal(Vector3 normal)
     {
         wallNormal = normal;
+    }
+
+    public void SetStepingUp(bool value)
+    {
+        stepingUp = value;
+    }
+
+    public void SetSlidingDirection(Vector3 value)
+    {
+        slidingDirection = value;
+    }
+
+    public Vector3 GetSlidingDirection()
+    {
+        return slidingDirection;
+    }
+
+    public bool GetStepingUp()
+    {
+        return stepingUp;
     }
 
     public Vector3 GetWallNormal()

@@ -16,62 +16,59 @@ public class RaycastShooting : MonoBehaviour
         AutoBurst,
         SemiBurst
     }
-
     [SerializeField] FireMode fireMode;
 
-    [SerializeField][Range(0, 1500)] float fireRate;
-
-    [SerializeField] Vector2 bulletSpread;
-
-    [SerializeField] int numberOfBullets = 1;
-
-    [SerializeField] float trailSpeed;
-
-    [SerializeField] float force;
-    [SerializeField] [ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
-    [SerializeField] [ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
-    [SerializeField] float knockBackForce;
+    [SerializeField][ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
+    [SerializeField][ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
     bool bursting;
 
-    float timeBetweenShots;
+    [SerializeField] [Range(0, 1500)] float fireRate; // rounds per minute
+    float timeBetweenShots; // seconds
     float nextFireTime;
+
+    [SerializeField] int numberOfBullets = 1;
+    [SerializeField] Vector2 bulletSpread;
+
+    [SerializeField] float trailSpeed;
+    [SerializeField] float force;
+    [SerializeField] float knockBackForce;
 
     [SerializeField] LayerMask whatIsShootable;
 
     [SerializeField] InputActionReference fireInput;
     [SerializeField] Transform attackPoint;
 
+    [Header("Object Pool")]
+    [SerializeField] ObjectPool muzzleFlashPool;
+    [SerializeField] ObjectPool bulletTrailPool;
+    [SerializeField] ObjectPool impactParticleSystemPool;
+
+    // references
     Transform aimingCameraContainer;
     Reloading reloadingScript;
     Audio audioPlayer;
     Rigidbody playerRig;
     AbstractGunAnimator gunAnimator;
 
-    [SerializeField] ObjectPool muzzleFlashPool;
-    [SerializeField] ObjectPool bulletTrailPool;
-    [SerializeField] ObjectPool impactParticleSystemPool;
-
-    // IObjectPool<ParticleSystem> objectPool;
-
     void Start()
     {
-        gunAnimator = GetComponent<AbstractGunAnimator>();
         timeBetweenShots = 60 / fireRate;
         Debug.Log("Time Between Shots: " + timeBetweenShots);
-
-        aimingCameraContainer = GameObject.Find("Aiming Camera Container").transform;
+        // get references
         reloadingScript = GetComponent<Reloading>();
-
-        playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
-
         audioPlayer = GetComponent<Audio>();
+        gunAnimator = GetComponent<AbstractGunAnimator>();
+        // get references with FindMyIphone
+        aimingCameraContainer = GameObject.Find("Aiming Camera Container").transform;
+        playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
     }
 
     void Update()
     {
         bool shootHeld = fireInput.action.IsPressed();
         bool shootThisFrame = fireInput.action.WasPerformedThisFrame();
-        // Check if nextFireTime is in between this FixedUpdate call and the next
+
+        // idk why this timing works, but dont change it EVER
         if (nextFireTime <= Time.time + Time.deltaTime * 0.552f && !gunAnimator.IsReloading())
         {
             if ((shootHeld && fireMode == FireMode.Auto) || (shootThisFrame && fireMode == FireMode.SemiAuto))
@@ -113,10 +110,12 @@ public class RaycastShooting : MonoBehaviour
             reloadingScript.Reload();
             return;
         }
+
         reloadingScript.curMag--;
 
-        nextFireTime = (float)Time.timeAsDouble + timeBetweenShots;
+        nextFireTime = (float)Time.timeAsDouble + timeBetweenShots; // don't change EVER
 
+        // if there's multiple bullets, shoot multiple times.
         for (int i = 0; i < numberOfBullets; i++)
         {
             RaycastFire();
@@ -125,28 +124,32 @@ public class RaycastShooting : MonoBehaviour
         gunAnimator.Fire();
         audioPlayer.FireSound();
 
-        GameObject muzzleFlash = muzzleFlashPool.GetObject();
+        MuzzleFlash();
 
-        muzzleFlash.transform.position = attackPoint.position;
-        muzzleFlash.transform.rotation = attackPoint.rotation;
-
+        // apply knockback
         playerRig.AddForce(-aimingCameraContainer.forward * knockBackForce, ForceMode.Impulse);
 
     }
 
+    void MuzzleFlash()
+    {
+        GameObject muzzleFlash = muzzleFlashPool.GetObject();
+
+        muzzleFlash.transform.position = attackPoint.position;
+        muzzleFlash.transform.rotation = attackPoint.rotation;
+    }
+
     void RaycastFire()
     {
+        // this is where were aiming
         Ray ray = new(attackPoint.position, (GetTargetPoint() - attackPoint.position).normalized);
 
-        Debug.DrawRay(ray.origin, ray.direction, Color.red, 2);
-
+        // if it hits something, do move toward it, if it doesn't, move in that direction for a bit
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, whatIsShootable))
         {
             StartCoroutine(RaycastTrail(attackPoint.position, hit.point, hit.normal, true));
-
+            // add force to hit
             hit.rigidbody?.AddForceAtPosition(ray.direction * force, hit.point, ForceMode.Impulse);
-
-            // Debug.Log("Hit Position at: " + hit.point + "Hit Rigidbyd name: " + hit.rigidbody + "On Layer: " + hit.collider.gameObject.layer);
         }
         else
         {
@@ -156,11 +159,10 @@ public class RaycastShooting : MonoBehaviour
 
     Vector3 GetTargetPoint()
     {
+        // randominizer
         Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), aimingCameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), aimingCameraContainer.right) * aimingCameraContainer.forward;
 
         Ray preRay = new(aimingCameraContainer.position, direction.normalized);
-
-        Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
 
         if (Physics.Raycast(preRay, out RaycastHit hit, Mathf.Infinity, whatIsShootable))
         {
@@ -172,41 +174,42 @@ public class RaycastShooting : MonoBehaviour
         }
     }
 
-    public IEnumerator RaycastTrail(Vector3 start, Vector3 end, Vector3 HitNormal, bool MadeImpact) // Called from Shoot(). Moves Trail along Raycast path
+    public IEnumerator RaycastTrail(Vector3 start, Vector3 end, Vector3 HitNormal, bool MadeImpact)
     {
-        GameObject Trail = bulletTrailPool.GetObject();
-
-        Trail.SetActive(true);
-        Trail.GetComponent<TrailRenderer>().emitting = true;
-        Trail.GetComponent<TrailRenderer>().Clear();
-        Trail.GetComponent<TrailRenderer>().enabled = true;
-
-        Trail.transform.position = start;
-        Trail.transform.rotation = Quaternion.identity;
+        // see how far we must travel
         float distance = Vector3.Distance(start, end);
         float remainingDistance = distance;
+        // get a trail
+        GameObject trailObject = bulletTrailPool.GetObject();
+        TrailRenderer trailRenderer = trailObject.GetComponent<TrailRenderer>();
+
+        // make it not do trail
+        trailRenderer.emitting = false;
+        // while we move it to the start
+        trailObject.transform.SetPositionAndRotation(start, Quaternion.identity);
+        // then Clear it so it doesnt remember where it just was
+        trailRenderer.Clear();
+        // and turn trail back on
+        trailRenderer.emitting = true;
+
+        // they see me moving, they trailin
         while (remainingDistance > 0)
         {
-            Trail.transform.position = Vector3.Lerp(start, end, 1 - (remainingDistance / distance));
-
+            trailObject.transform.position = Vector3.Lerp(start, end, 1 - (remainingDistance / distance));
             remainingDistance -= trailSpeed * Time.deltaTime;
-
             yield return null;
         }
-        Trail.transform.position = end;
-        
-        Trail.GetComponent<TrailRenderer>().emitting = false;
-        Trail.GetComponent<TrailRenderer>().Clear();
-        Trail.SetActive(false);
-        Trail.GetComponent<TrailRenderer>().enabled = false;
 
-        bulletTrailPool.ReleaseObject(Trail);
+        // make sure its at the end
+        trailObject.transform.position = end;
+        // give it back to god
+        bulletTrailPool.ReleaseObject(trailObject);
 
         if (MadeImpact)
         {
+            // make impact go boom
             GameObject impactParticleSystem = impactParticleSystemPool.GetObject();
-            impactParticleSystem.transform.position = end;
-            impactParticleSystem.transform.rotation = Quaternion.LookRotation(HitNormal);
+            impactParticleSystem.transform.SetPositionAndRotation(end, Quaternion.LookRotation(HitNormal));
         }
     }
 
@@ -214,5 +217,11 @@ public class RaycastShooting : MonoBehaviour
     private bool IsBurstMode()
     {
         return fireMode == FireMode.AutoBurst || fireMode == FireMode.SemiBurst;
+    }
+
+    // powerups and items
+    public void ApplyModifier(string varName, float multiplier)
+    {
+        // set var with varName to itself * multiplier
     }
 }

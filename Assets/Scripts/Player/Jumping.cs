@@ -17,7 +17,6 @@ public class Jumping : MonoBehaviour
     [SerializeField] float groundJumpForce;
     [SerializeField] float airJumpForce;
     [SerializeField] float wallJumpForce;
-
     [Header("Cayote Time")]
     [Range(0, 1)] [SerializeField] float cayoteTime;
     bool usedCayoteTime;

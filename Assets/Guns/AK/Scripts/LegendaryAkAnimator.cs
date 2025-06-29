@@ -5,8 +5,6 @@ using UnityEngine;
 
 public class LegendaryAkAnimator : AbstractGunAnimator
 {
-    Audio audioPlayer;
-    Reloading reloading;
     Sequence fireSequence;
     Sequence reloadSequence;
 
@@ -14,11 +12,12 @@ public class LegendaryAkAnimator : AbstractGunAnimator
     [SerializeField] Transform bolt;
     [SerializeField] GameObject bullet;
 
+    [SerializeField] ObjectPool bulletObjectPool;
+
+    bool curReloading;
+
     void Start()
     {
-        audioPlayer = GetComponent<Audio>();
-        reloading = GetComponent<Reloading>();
-
         reloadSequence = DOTween.Sequence();
         fireSequence = DOTween.Sequence();
 
@@ -31,34 +30,40 @@ public class LegendaryAkAnimator : AbstractGunAnimator
             .Insert(0.15f, bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 1.21f), 0.05f)); // Move Bolt
 
         reloadSequence
-            .AppendCallback(() => StartCoroutine(SpawnBullets())) // Spawn bullets
-            .AppendInterval(0.1065f * reloading.maxMagSize)
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt
-            .AppendCallback(() => audioPlayer.PlaySound1())
+            .AppendCallback(() => PlayAudio.Invoke(0))
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 0.94f), 0.2f)) // Move Bolt
-            .AppendCallback(() => audioPlayer.PlaySound2())
+            .AppendCallback(() => PlayAudio.Invoke(1))
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 1.21f), 0.2f)) // Move Bolt
-            .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,0f), 0.2f)); // Rotate back to normal
+            .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,0f), 0.2f)) // Rotate back to normal
+            .AppendCallback(() => curReloading = false);
+    }
 
+    IEnumerator reloadCoroutine()
+    {
+        curReloading = true;
+        yield return StartCoroutine(SpawnBullets());
+        yield return new WaitForSeconds(0.3f);
+        reloadSequence.Restart();
     }
 
     IEnumerator SpawnBullets()
     {
-        for (int i = 0; i < reloading.maxMagSize; i++)
+        for (int i = 0; i < 200; i++)
         {
-            GameObject bulletInstance = Instantiate(bullet, recoilOrigin);
+            GameObject bulletInstance = bulletObjectPool.GetObject();
             bulletInstance.GetComponent<Renderer>().material.DOFade(0.0f, 0.0f);
             bulletInstance.transform.localPosition = new Vector3(0f, 0.94f, 0.471f);
             bulletInstance.GetComponent<Renderer>().material.DOFade(1.0f, 0.3f);
             yield return new WaitForSeconds(0.1f);
             bulletInstance.transform.DOLocalMove(new Vector3(0, 0.94f, 1.286f), 0.3f).OnComplete(() =>
             {
-                audioPlayer.PlaySound3();
+                PlayAudio.Invoke(2);
             });
             bulletInstance.GetComponent<Renderer>().material.DOFade(0.0f, 0.5f).onComplete += () =>
             {
-                reloading.curMag++;
-                Destroy(bulletInstance);
+                addToMag.Invoke(1);
+                bulletObjectPool.ReleaseObject(bulletInstance);
             };
         }
     }
@@ -70,11 +75,11 @@ public class LegendaryAkAnimator : AbstractGunAnimator
 
     public override void Reload()
     {
-        reloadSequence.Restart();
+        StartCoroutine(reloadCoroutine()); 
     }
 
     public override bool IsReloading()
     {
-        return reloadSequence.IsPlaying();
+        return curReloading;
     }
 }

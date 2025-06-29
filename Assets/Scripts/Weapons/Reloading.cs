@@ -11,14 +11,10 @@ public class Reloading : MonoBehaviour
 
     AbstractGunAnimator gunAnimator;
 
-    void Awake()
-    {
-        curMag = maxMagSize;
-    }
-
     void Start()
     {
         gunAnimator = GetComponent<AbstractGunAnimator>();
+        curMag = maxMagSize;
     }
 
     public void Reload()

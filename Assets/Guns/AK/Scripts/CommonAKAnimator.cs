@@ -3,7 +3,6 @@ using UnityEngine;
 
 public class CommonAKAnimator: AbstractGunAnimator
 {
-    Reloading reloading;
     [SerializeField] Transform bolt;
     [SerializeField] Transform magazineOrigin;
     [SerializeField] GameObject magazine;
@@ -12,17 +11,12 @@ public class CommonAKAnimator: AbstractGunAnimator
 
     Material magMat;
     Rigidbody magRig;
-    Audio audioPlayer;
-
     Sequence reloadSequence;
     Sequence fireSequence;
+
     void Start()
     {
-        reloading = GetComponent<Reloading>();
         magRig = magazineOrigin.GetComponent<Rigidbody>();
-
-        audioPlayer = GetComponent<Audio>();
-
         fireSequence = DOTween.Sequence();
         reloadSequence = DOTween.Sequence();
 
@@ -36,7 +30,7 @@ public class CommonAKAnimator: AbstractGunAnimator
             })
 
             .Append(magazineOrigin.DOLocalRotate(new Vector3(0, -90, 25), 0.3f)) // Rotate Out a Little
-            .JoinCallback(() => audioPlayer.PlaySound1())
+            .JoinCallback(() => PlayAudio.Invoke(0))
             .InsertCallback(0.3f,() => 
             {
                 magRig.isKinematic = false; // Turn on Physics
@@ -59,15 +53,15 @@ public class CommonAKAnimator: AbstractGunAnimator
             .Append(magMat.DOFade(1.0f, 0.3f)) // Fade into Visible
             .Append(magazineOrigin.DOLocalMove(new Vector3(0, 0.33f, 1.17f), 0.35f)) // Move back to Final Pos
             .Append(magazineOrigin.DOLocalRotate(new Vector3(0, -90, 0), 0.2f)) // Rotate back to Final Rot
-            .JoinCallback(() => audioPlayer.PlaySound2())
-            .AppendCallback(() => reloading.curMag = reloading.maxMagSize)
+            .JoinCallback(() => PlayAudio.Invoke(1))
+            .AppendCallback(() => onReload.Invoke())
             .AppendInterval(0.3f) // Delay
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,55f), 0.2f)) // Rotate to see bolt
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 0.94f), 0.2f)) // Move Bolt
-            .JoinCallback(() => audioPlayer.PlaySound3())
+            .JoinCallback(() => PlayAudio.Invoke(2))
             .AppendInterval(0.04f) // Delay
             .Append(bolt.DOLocalMove(new Vector3(0.11f, 0.6f, 1.21f), 0.2f)) // Move Bolt
-            .JoinCallback(() => audioPlayer.PlaySound4())
+            .JoinCallback(() => PlayAudio.Invoke(3))
             .Append(recoilOrigin.DOLocalRotate(new Vector3(0.0f,0f,0f), 0.2f)); // Rotate back to normal
 
         fireSequence

@@ -6,6 +6,9 @@ using UnityEngine.InputSystem;
 using TMPro;
 using Unity.Mathematics;
 using UnityEngine.Events;
+using Unity.VisualScripting;
+using DG.Tweening;
+using System.Linq;
 
 public class Movement : MonoBehaviour
 {
@@ -23,6 +26,7 @@ public class Movement : MonoBehaviour
     [SerializeField] float crouchMoveSpeed;
     [SerializeField] float slideMoveSpeed;
     const float MOVE_THRESHOLD = 0.1f;
+    const float SECONDARY_MOVE_THRESHOLD = 0.4f; // The one for if we moving forward, are we moving forward right/left/middle
 
     [Header("Drag Settings")]
     [SerializeField] float groundedDrag;
@@ -30,6 +34,13 @@ public class Movement : MonoBehaviour
     [SerializeField] float wallGroundedDrag;
     [SerializeField] float crouchedDrag;
     [SerializeField] float slideDrag;
+
+    [Header("Anti-Movement")]
+    [SerializeField] float groundedAntiDrag;
+    [SerializeField] float airborneAntiDrag;
+    [SerializeField] float wallAntiDrag;
+    [SerializeField] float crouchAntiDrag;
+    [SerializeField] float slideAntiDrag;
 
     [Header("Unity Events")]
     public UnityEvent<MoveDirection, float> onStartWalk = new UnityEvent<MoveDirection, float>();
@@ -39,8 +50,10 @@ public class Movement : MonoBehaviour
     [SerializeField] TextMeshProUGUI speedText;
     Rigidbody rig;
     CommonVariables commonVariables;
+    CapsuleCollider col;
     void Awake()
     {
+        col = GetComponent<CapsuleCollider>();
         rig = GetComponent<Rigidbody>();
         commonVariables = GetComponent<CommonVariables>();
     }
@@ -55,11 +68,11 @@ public class Movement : MonoBehaviour
 
             if (moveInput.y > MOVE_THRESHOLD)
             {
-                if (moveInput.x > MOVE_THRESHOLD)
+                if (moveInput.x > SECONDARY_MOVE_THRESHOLD)
                 {
                     moveDirection = MoveDirection.ForwardRight;
                 }
-                else if (moveInput.x < -MOVE_THRESHOLD)
+                else if (moveInput.x < -SECONDARY_MOVE_THRESHOLD)
                 {
                     moveDirection = MoveDirection.ForwardLeft;
                 }
@@ -70,11 +83,11 @@ public class Movement : MonoBehaviour
             }
             else if (moveInput.y < -MOVE_THRESHOLD)
             {
-                if (moveInput.x > MOVE_THRESHOLD)
+                if (moveInput.x > SECONDARY_MOVE_THRESHOLD)
                 {
                     moveDirection = MoveDirection.BackRight;
                 }
-                else if (moveInput.x < -MOVE_THRESHOLD)
+                else if (moveInput.x < -SECONDARY_MOVE_THRESHOLD)
                 {
                     moveDirection = MoveDirection.BackLeft;
                 }
@@ -134,12 +147,58 @@ public class Movement : MonoBehaviour
             moveState = MoveState.Idle;
         }
 
+        bool movingWithoutWanting = rig.velocity.magnitude > 1f && !curMoving;
+
+        if (movingWithoutWanting)
+        {
+            AntiMovement();
+        }
+    }
+
+    void Update()
+    {
         speedText.text = "Speed Text: " + Mathf.RoundToInt(new Vector2(rig.velocity.x, rig.velocity.z).magnitude).ToString();
+    }
+
+    void AntiMovement()
+    {
+        GroundState groundState = commonVariables.GetGroundState();
+        float antiMovedrag = 0f;
+        switch (groundState)
+        {
+            case GroundState.Airborne:
+                antiMovedrag = airborneAntiDrag;
+                break;
+            case GroundState.WallGrounded:
+                antiMovedrag = wallAntiDrag;
+                break;
+            case GroundState.Grounded:
+                CrouchState crouchState = commonVariables.GetCrouchState();
+
+                switch (crouchState)
+                {
+                    case CrouchState.Crouched:
+                        antiMovedrag = crouchAntiDrag;
+                        break;
+                    case CrouchState.Sliding:
+                        antiMovedrag = slideAntiDrag;
+                        break;
+                    case CrouchState.Standing:
+                        antiMovedrag = groundedAntiDrag;
+                        break;
+                }
+
+                break;
+        }
+
+        rig.drag = antiMovedrag;
     }
 
     void StartMoving()
     {
         onStartWalk.Invoke(commonVariables.GetMoveDirection(), rig.velocity.magnitude);
+
+        RecalculateDrag();
     }
 
     void WhileMoving()
@@ -196,7 +255,7 @@ public class Movement : MonoBehaviour
             Vector3 wallNormal = commonVariables.GetWallNormal();
             Vector3 forwardVector = Vector3.ProjectOnPlane(transform.forward, wallNormal).normalized;
 
-            Vector3 moveVector = ((forwardVector * moveInput.y)).normalized * onWallMoveSpeed;
+            Vector3 moveVector = (forwardVector * moveInput.y).normalized * onWallMoveSpeed;
 
             switch (wallState)
             {
@@ -234,8 +293,6 @@ public class Movement : MonoBehaviour
                     break;
             }
         }
-
-        // if camera facing too far away from wall, leave it.
     }
 
     void AirborneMove()
@@ -250,39 +307,34 @@ public class Movement : MonoBehaviour
         commonVariables.SetMoveDirection(MoveDirection.None);
     }
 
-    // Drag Functions
-    public void SetDragGround()
+    public void RecalculateDrag()
     {
-        rig.drag = groundedDrag;
-    }
-    public void SetDragAir()
-    {
-        rig.drag = airborneDrag;
-    }
-    public void SetDragWall()
-    {
-        rig.drag = wallGroundedDrag;
-    }
-    public void SetDragCrouch()
-    {
-        rig.drag = crouchedDrag;
-    }
-    public void SetDragSlide()
-    {
-        rig.drag = slideDrag;
-    }
-    public void SetDragUnCrouch()
-    {
-        switch (commonVariables.GetGroundState())
+        GroundState groundState = commonVariables.GetGroundState();
+
+        switch (groundState)
         {
-            case GroundState.Grounded:
-                rig.drag = groundedDrag;
+            case GroundState.Airborne:
+                rig.drag = airborneDrag;
                 break;
             case GroundState.WallGrounded:
                 rig.drag = wallGroundedDrag;
                 break;
-            case GroundState.Airborne:
-                rig.drag = airborneDrag;
+            case GroundState.Grounded:
+                CrouchState crouchState = commonVariables.GetCrouchState();
+
+                switch (crouchState)
+                {
+                    case CrouchState.Sliding:
+                        rig.drag = slideDrag;
+                        break;
+                    case CrouchState.Standing:
+                        rig.drag = groundedDrag;
+                        break;
+                    case CrouchState.Crouched:
+                        rig.drag = crouchedDrag;
+                        break;
+                }
+
                 break;
         }
     }

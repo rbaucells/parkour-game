@@ -1,7 +1,12 @@
+using System;
 using System.Collections;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using NaughtyAttributes;
+using Random = UnityEngine.Random;
+using UnityEngine.Pool;
+using Unity.VisualScripting;
+using Unity.Mathematics;
 
 public class ProjectileShooting : MonoBehaviour
 {
@@ -12,59 +17,60 @@ public class ProjectileShooting : MonoBehaviour
         AutoBurst,
         SemiBurst
     }
-
     [SerializeField] FireMode fireMode;
 
-    [SerializeField] [Range(0,1500)] float fireRate;
-
-    [SerializeField] Vector2 bulletSpread;
-
-    [SerializeField] int numberOfBullets = 1;
-
-    [SerializeField] float bulletForce;
-
-    [SerializeField] [ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
-    [SerializeField] [ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
-
-    [SerializeField] float knockBackForce;
-
+    [SerializeField][ShowIf(nameof(IsBurstMode))] int numberOfBulletsInBurst = 0;
+    [SerializeField][ShowIf(nameof(IsBurstMode))] float timeBetweenBursts;
     bool bursting;
 
-    float timeBetweenShots;
+    [SerializeField] [Range(0, 1500)] float fireRate; // rounds per minute
+    float timeBetweenShots; // seconds
     float nextFireTime;
+
+    [SerializeField] int numberOfBullets = 1;
+    [SerializeField] Vector2 bulletSpread;
+
+    [SerializeField] float bulletSpeed;
+    [SerializeField] float force;
+    [SerializeField] float knockBackForce;
+    [SerializeField] float gravity;
 
     [SerializeField] LayerMask whatIsShootable;
 
     [SerializeField] InputActionReference fireInput;
     [SerializeField] Transform attackPoint;
-    [SerializeField] GameObject muzzleFlash;
+
+    [Header("Object Pool")]
+    [SerializeField] ObjectPool muzzleFlashPool;
+    [SerializeField] ObjectPool bulletPool;
+    [SerializeField] ObjectPool impactParticleSystemPool;
+
+    // references
     Transform aimingCameraContainer;
     Reloading reloadingScript;
     Audio audioPlayer;
     Rigidbody playerRig;
-
     AbstractGunAnimator gunAnimator;
-    [SerializeField] GameObject bullet;
 
     void Start()
     {
-        gunAnimator = GetComponent<AbstractGunAnimator>();
-        timeBetweenShots = 60/fireRate;
-        Debug.Log ("Time Between Shots: " + timeBetweenShots);
-
-        aimingCameraContainer = GameObject.Find("Aiming Camera Container").transform;
+        timeBetweenShots = 60 / fireRate;
+        Debug.Log("Time Between Shots: " + timeBetweenShots);
+        // get references
         reloadingScript = GetComponent<Reloading>();
-
-        playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
-
         audioPlayer = GetComponent<Audio>();
+        gunAnimator = GetComponent<AbstractGunAnimator>();
+        // get references with FindMyIphone
+        aimingCameraContainer = GameObject.Find("Aiming Camera Container").transform;
+        playerRig = GameObject.Find("Player").GetComponent<Rigidbody>();
     }
 
     void Update()
     {
         bool shootHeld = fireInput.action.IsPressed();
         bool shootThisFrame = fireInput.action.WasPerformedThisFrame();
-        // Check if nextFireTime is in between this FixedUpdate call and the next
+
+        // idk why this timing works, but dont change it EVER
         if (nextFireTime <= Time.time + Time.deltaTime * 0.552f && !gunAnimator.IsReloading())
         {
             if ((shootHeld && fireMode == FireMode.Auto) || (shootThisFrame && fireMode == FireMode.SemiAuto))
@@ -99,7 +105,6 @@ public class ProjectileShooting : MonoBehaviour
         bursting = false;
     }
 
-
     void Shoot()
     {
         if (reloadingScript.curMag <= 0)
@@ -107,10 +112,12 @@ public class ProjectileShooting : MonoBehaviour
             reloadingScript.Reload();
             return;
         }
+
         reloadingScript.curMag--;
 
-        nextFireTime = (float) Time.timeAsDouble + timeBetweenShots;
+        nextFireTime = (float)Time.timeAsDouble + timeBetweenShots; // don't change EVER
 
+        // if there's multiple bullets, shoot multiple times.
         for (int i = 0; i < numberOfBullets; i++)
         {
             ProjectileFire();
@@ -119,31 +126,56 @@ public class ProjectileShooting : MonoBehaviour
         gunAnimator.Fire();
         audioPlayer.FireSound();
 
-        Instantiate(muzzleFlash, attackPoint.position, attackPoint.rotation);
+        MuzzleFlash();
 
+        // apply knockback
         playerRig.AddForce(-aimingCameraContainer.forward * knockBackForce, ForceMode.Impulse);
+
     }
 
-    void ProjectileFire()
+    void MuzzleFlash()
     {
-        Vector3 bulletDir = (GetTargetPoint() - attackPoint.position).normalized;
+        GameObject muzzleFlash = muzzleFlashPool.GetObject();
 
-        GameObject curBullet = Instantiate(bullet, attackPoint.position, Quaternion.identity);
+        muzzleFlash.transform.position = attackPoint.position;
+        muzzleFlash.transform.rotation = attackPoint.rotation;
+    }
 
-        curBullet.transform.forward = bulletDir;
-
+    void ProjectileFire() // don't change, works fine
+    {
+        // get a bullet
+        GameObject curBullet = bulletPool.GetObject();
+        // get its references
         Rigidbody curRig = curBullet.GetComponent<Rigidbody>();
+        TrailRenderer curTrail = curBullet.GetComponent<TrailRenderer>();
+        curRig.isKinematic = false;
+        // this is where we aiming at
+        Vector3 direction = (GetTargetPoint() - attackPoint.position).normalized;
+        Debug.DrawRay(attackPoint.position, direction, Color.red, 3);
 
-        curRig.AddRelativeForce(curBullet.transform.forward * bulletForce, ForceMode.Impulse);
+        // turn off trail
+        curTrail.emitting = false;
+        // move it to where it needs to be, and rotation it
+        curBullet.transform.position = attackPoint.position;
+        curBullet.transform.forward = direction;
+        // clear the trail so it forgets where it was and then set trail on again
+        curTrail.Clear();
+        curTrail.emitting = true;
+
+        ProjectileBullet curScript = curBullet.GetComponent<ProjectileBullet>();
+        curScript.impactObjectPool = impactParticleSystemPool;
+        curScript.gravity = gravity;
+
+        // make it go in direction
+        curRig.AddForce(direction * bulletSpeed, ForceMode.Impulse);
     }
 
     Vector3 GetTargetPoint()
     {
+        // randominizer
         Vector3 direction = Quaternion.AngleAxis(Random.Range(-bulletSpread.x, bulletSpread.x), aimingCameraContainer.up) * Quaternion.AngleAxis(Random.Range(-bulletSpread.y, bulletSpread.y), aimingCameraContainer.right) * aimingCameraContainer.forward;
-
-        Ray preRay = new(aimingCameraContainer.position , direction.normalized);
-        
-        Debug.DrawRay(preRay.origin, preRay.direction, Color.blue, 2);
+        Debug.DrawRay(aimingCameraContainer.position, direction, Color.blue, 3);
+        Ray preRay = new(aimingCameraContainer.position, direction.normalized);
 
         if (Physics.Raycast(preRay, out RaycastHit hit, Mathf.Infinity, whatIsShootable))
         {
@@ -159,5 +191,11 @@ public class ProjectileShooting : MonoBehaviour
     private bool IsBurstMode()
     {
         return fireMode == FireMode.AutoBurst || fireMode == FireMode.SemiBurst;
+    }
+
+    // powerups and items
+    public void ApplyModifier(string varName, float multiplier)
+    {
+        // set var with varName to itself * multiplier
     }
 }

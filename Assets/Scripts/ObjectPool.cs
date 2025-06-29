@@ -8,6 +8,7 @@ public class ObjectPool : MonoBehaviour
     {
         Collision,
         Time,
+        CollisionAndTime,
         ParticleSystem,
         Manual
     }
@@ -17,7 +18,7 @@ public class ObjectPool : MonoBehaviour
     public int maxPoolSize;
     public ReturnType returnType;
 
-    [ShowIf("returnType", ReturnType.Time)] public float returnTime;
+    [ShowIf(nameof(HasTime))] public float returnTime;
 
     IObjectPool<GameObject> pool;
 
@@ -29,27 +30,28 @@ public class ObjectPool : MonoBehaviour
 
     GameObject CreateObject()
     {
-        // Debug.Log("Create Object");
         GameObject obj;
 
         if (parent == null)
         {
             obj = Instantiate(prefab); // create instance of object    
             obj.transform.position = Vector3.zero; // reset position        
+            obj.transform.rotation = Quaternion.identity; // reset rotation        
         }
         else
         {
             obj = Instantiate(prefab, parent.transform); // create instance of object with parent
             obj.transform.localPosition = Vector3.zero; // reset position
+            obj.transform.localRotation = Quaternion.identity; // reset rotation       
         }
 
-        if (returnType != ReturnType.Manual) 
+        if (returnType != ReturnType.Manual)
         {
             ReturnToPool returnToPool = obj.AddComponent<ReturnToPool>(); // add ReturnToPool component to object if neeeded
             // set variables
             returnToPool.pool = pool;
             returnToPool.returnType = returnType;
-            if (returnType == ReturnType.Time)
+            if (returnType == ReturnType.Time || returnType == ReturnType.CollisionAndTime)
                 returnToPool.time = returnTime;
         }
 
@@ -58,22 +60,19 @@ public class ObjectPool : MonoBehaviour
 
     void OnTakeFromPool(GameObject obj)
     {
-        // Debug.Log("Get Object");
         obj.SetActive(true); // enable object
     }
 
     void OnReturnToPool(GameObject obj)
     {
-        // Debug.Log("Return Object");
         obj.SetActive(false); // disable object
     }
 
     void OnDestroyPoolObject(GameObject obj)
     {
-        // Debug.Log("Destroy Object");
         Destroy(obj); // destroy object
     }
-    
+
 
     public GameObject GetObject()
     {
@@ -88,5 +87,11 @@ public class ObjectPool : MonoBehaviour
     public void DestroyPool()
     {
         pool.Clear();
+    }
+
+    // Helper function for NaughtyAttributes
+    public bool HasTime()
+    {
+        return returnType == ReturnType.Time || returnType == ReturnType.CollisionAndTime;
     }
 }

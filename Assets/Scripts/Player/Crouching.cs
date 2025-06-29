@@ -29,11 +29,8 @@ public class Crouching : MonoBehaviour
     [SerializeField] float groundSlamForce;
 
     [Header("Slide")]
-    [SerializeField] float maxSlideTime;
-    float startSlideTime;
-    [SerializeField] float startDirectionMoveSpeed;
+    [SerializeField] float constantMoveSpeed;
     [SerializeField] float startImpulse;
-    [SerializeField] float endVelocityMultiplier;
     [SerializeField] float maxSlideSpeed;
     bool waitForGroundSlide;
     Vector3 startDirection;
@@ -41,6 +38,7 @@ public class Crouching : MonoBehaviour
     [Header("Misc")]
     [SerializeField] float crouchDownForce;
     [SerializeField] float unCrouchRaycastLengh;
+    bool buttonHeld;
 
     [Header("References")]
     [SerializeField] LayerMask unCrouchLayerMask;
@@ -66,6 +64,7 @@ public class Crouching : MonoBehaviour
         switch (context.phase)
         {
             case InputActionPhase.Performed:
+                buttonHeld = true;  
                 if (commonVariables.GetMoveDirection() == MoveDirection.None)
                 {
                     switch (commonVariables.GetGroundState())
@@ -92,6 +91,7 @@ public class Crouching : MonoBehaviour
                 }
                 break;
             case InputActionPhase.Canceled:
+                buttonHeld = false;
                 StopCrouchSlide();
                 break;
         } 
@@ -119,12 +119,14 @@ public class Crouching : MonoBehaviour
                     case GroundState.Grounded:
                         WhileSlideOnGround();
                         break;
-                    case GroundState.Airborne:
-                        WhileSlideInAir();
-                        break;
                 }
 
                 break;
+        }
+
+        if (waitForGroundSlide)
+        {
+            WhileSlideInAir();
         }
     }
 
@@ -143,12 +145,12 @@ public class Crouching : MonoBehaviour
 
     void StartSlideOnGround()
     {
+        Vector2 moveInput = commonVariables.GetMoveInput();
+        commonVariables.SetSlidingDirection(new(moveInput.x, 0, moveInput.y));
         commonVariables.SetCrouchState(CrouchState.Sliding);
         onSlide.Invoke();
-        Vector2 moveInput = commonVariables.GetMoveInput();
-        startDirection = new Vector3(moveInput.x, 0, moveInput.y);
-        rig.AddRelativeForce(startDirection * startImpulse, ForceMode.Impulse);
-        startSlideTime = Time.time;
+        if (rig.velocity.magnitude < maxSlideSpeed)
+            rig.AddRelativeForce(commonVariables.GetSlidingDirection() * startImpulse, ForceMode.Impulse);
     }
 
     public void StartAirSlideOnGround()
@@ -171,17 +173,11 @@ public class Crouching : MonoBehaviour
 
     void WhileSlideOnGround()
     {
-        if (Time.time < startSlideTime + maxSlideTime)
+        startDirection = commonVariables.GetSlidingDirection();
+        if (rig.velocity.magnitude < maxSlideSpeed)
         {
-            if (rig.velocity.magnitude < maxSlideSpeed)
-            {
-                rig.AddRelativeForce(startDirection * startDirectionMoveSpeed, ForceMode.Acceleration);
-            }
+            rig.AddRelativeForce(startDirection * constantMoveSpeed, ForceMode.Acceleration);
         }
-            else
-            {
-                StopCrouchSlide();
-            }
     }
 
     void WhileCrouchInAir()
@@ -192,7 +188,7 @@ public class Crouching : MonoBehaviour
 
     void WhileSlideInAir()
     {
-        
+
     }
 
     public void Slam(Collision other)
@@ -219,10 +215,23 @@ public class Crouching : MonoBehaviour
 
     void StopCrouchSlide()
     {
+        if (Physics.Raycast(crouchCameraContainer.position, transform.up, unCrouchRaycastLengh, unCrouchLayerMask))
+        {
+            StartCoroutine(WaitUntilAbleToUnCrouch());
+            return;
+        }
+
         commonVariables.SetCrouchState(CrouchState.Standing);
         onUnCrouchSlide.Invoke();
         canSlam = false;
         waitForGroundSlide = false;
+    }
+
+    IEnumerator WaitUntilAbleToUnCrouch()
+    {
+        yield return new WaitUntil(() => !Physics.Raycast(transform.position, transform.up, unCrouchRaycastLengh, unCrouchLayerMask));
+        if (!buttonHeld)
+            StopCrouchSlide();
     }
 
     // Helper methods for NaughtyAttributes

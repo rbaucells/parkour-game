@@ -25,7 +25,7 @@ public class GroundCheck : MonoBehaviour
     // ground detection
     ISet<Collider> groundColliders = new HashSet<Collider>();
     const float GROUND_TOLERANCE = 0.3f;
-
+    const float MAX_FLOOR_ANGLE = 45f;
     // component references
     CapsuleCollider col;
     Rigidbody rig;
@@ -41,13 +41,18 @@ public class GroundCheck : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (commonVariables.GetGroundState() != GroundState.WallGrounded)
+        bool stepping = commonVariables.GetStepingUp();
+
+        if (!stepping)
         {
-            rig.AddForce(-transform.up * gravityForce, ForceMode.Acceleration);
-        }
-        else
-        {
-                rig.AddForce(-transform.up * gravityForce * wallRunGravityMultipliers, ForceMode.Acceleration);   
+            if (commonVariables.GetGroundState() != GroundState.WallGrounded)
+            {
+                rig.AddForce(-transform.up * gravityForce, ForceMode.Acceleration);
+            }
+            else
+            {
+                rig.AddForce(-transform.up * gravityForce * wallRunGravityMultipliers, ForceMode.Acceleration);
+            }
         }
     }
 
@@ -59,7 +64,7 @@ public class GroundCheck : MonoBehaviour
         float curColCenter = col.center.y;
         float curColHeight = col.height;
 
-        var feetYLevel = (transform.position.y + curColCenter) - curColHeight / 2;
+        float feetYLevel = (transform.position.y + curColCenter) - curColHeight / 2;
         foreach (var contactPoint in contactPoints)
         {
             if (Mathf.Abs(contactPoint.point.y - feetYLevel) < GROUND_TOLERANCE)
@@ -71,7 +76,7 @@ public class GroundCheck : MonoBehaviour
 
         bool curGrounded = groundColliders.Any();
         GroundState groundState = commonVariables.GetGroundState();
-        
+
         if (curGrounded && groundState == GroundState.Airborne)
         {
             AirborneToGrounded(other);
@@ -122,25 +127,36 @@ public class GroundCheck : MonoBehaviour
                     }
                 }
             }
-            
+
             if (groundState == GroundState.Airborne && wallColliders.Any())
             {
                 AirborneToWallGrounded(other);
+            }
+        }
+
+        if (groundState == GroundState.Grounded)
+        {
+            foreach (ContactPoint contactPoint in contactPoints)
+            {
+                if (Vector3.Angle(contactPoint.normal, Vector3.up) < MAX_FLOOR_ANGLE)
+                {
+                    commonVariables.SetGroundNormal(contactPoint.normal);
+                    break;
+                }
             }
         }
     }
 
     void OnCollisionStay(Collision other)
     {
+        var contactPoints = new ContactPoint[other.contactCount];
+        other.GetContacts(contactPoints);
+
         GroundState groundState = commonVariables.GetGroundState();
 
         if (groundState != GroundState.Grounded)
         {
             wallColliders.Clear();
-
-            var contactPoints = new ContactPoint[other.contactCount];
-            other.GetContacts(contactPoints);
-
             foreach (var contactPoint in contactPoints)
             {
                 Vector3 normal = contactPoint.normal;
@@ -178,7 +194,7 @@ public class GroundCheck : MonoBehaviour
                     {
                         commonVariables.SetWallState(WallState.None);
                     }
-                    
+
                     if (oldWallState != commonVariables.GetWallState())
                         onWallStateChange.Invoke(commonVariables.GetWallState());
                 }
@@ -191,6 +207,18 @@ public class GroundCheck : MonoBehaviour
             if (groundState == GroundState.Airborne && wallColliders.Any())
             {
                 AirborneToWallGrounded(other);
+            }
+        }
+
+        if (groundState == GroundState.Grounded)
+        {
+            foreach (ContactPoint contactPoint in contactPoints)
+            {
+                if (Vector3.Angle(contactPoint.normal, Vector3.up) < MAX_FLOOR_ANGLE)
+                {
+                    commonVariables.SetGroundNormal(contactPoint.normal);
+                    break;
+                }
             }
         }
     }
@@ -244,6 +272,7 @@ public class GroundCheck : MonoBehaviour
         commonVariables.SetGroundState(GroundState.WallGrounded);
         onAirborneToWallGrounded.Invoke(commonVariables.GetWallState());
         commonVariables.SetWallNormal(other.GetContact(0).normal);
+        rig.velocity = new(rig.velocity.x, 0, rig.velocity.z);
     }
 
     void WallGroundedToAirborne()

@@ -34,6 +34,8 @@ public class AnimationController : MonoBehaviour
 
     // component references
     CapsuleCollider capsuleCollider;
+    CommonVariables commonVariables;
+
     void Start()
     {
         capsuleCollider = GetComponent<CapsuleCollider>();
@@ -48,10 +50,16 @@ public class AnimationController : MonoBehaviour
             .Join(jumpWeaponContainer.DOLocalMove(new Vector3(0, 0, 0), 0.28f))
             .SetAutoKill(false)
             .SetEase(Ease.OutSine);
+
+        commonVariables = GetComponent<CommonVariables>();
     }
 
     public void Jump()
     {
+        if (commonVariables.GetStepingUp())
+        {
+            return;
+        }
         jumpSequence.Restart();
     }
     Coroutine WalkingAnimCore;
@@ -90,7 +98,11 @@ public class AnimationController : MonoBehaviour
             .Play();
     }
     public void Land()
-    {  
+    {
+        if (commonVariables.GetStepingUp())
+        {
+            return;
+        }
         Sequence landSequence = DOTween.Sequence()
             .Append(landCameraContainer.DOLocalRotate(new Vector3(1.5f, 0, 0), 0.17f))
             .Join(landWeaponContainer.DOLocalRotate(new Vector3(0.1f , 0, 0), 0.22f))
