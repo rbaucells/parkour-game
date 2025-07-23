@@ -33,7 +33,6 @@ public class Crouching : MonoBehaviour
     [SerializeField] float startImpulse;
     [SerializeField] float maxSlideSpeed;
     bool waitForGroundSlide;
-    Vector3 startDirection;
 
     [Header("Misc")]
     [SerializeField] float crouchDownForce;
@@ -145,12 +144,13 @@ public class Crouching : MonoBehaviour
 
     void StartSlideOnGround()
     {
-        Vector2 moveInput = commonVariables.GetMoveInput();
-        commonVariables.SetSlidingDirection(new(moveInput.x, 0, moveInput.y));
         commonVariables.SetCrouchState(CrouchState.Sliding);
         onSlide.Invoke();
+        Vector2 moveInput = commonVariables.GetMoveInput();
+        Vector3 startDirection = new Vector3(moveInput.x, 0, moveInput.y);
+        commonVariables.SetSlidingDirection(startDirection);
         if (rig.velocity.magnitude < maxSlideSpeed)
-            rig.AddRelativeForce(commonVariables.GetSlidingDirection() * startImpulse, ForceMode.Impulse);
+            rig.AddRelativeForce(startDirection * startImpulse, ForceMode.Impulse);
     }
 
     public void StartAirSlideOnGround()
@@ -173,7 +173,7 @@ public class Crouching : MonoBehaviour
 
     void WhileSlideOnGround()
     {
-        startDirection = commonVariables.GetSlidingDirection();
+        Vector3 startDirection = commonVariables.GetSlidingDirection();
         if (rig.velocity.magnitude < maxSlideSpeed)
         {
             rig.AddRelativeForce(startDirection * constantMoveSpeed, ForceMode.Acceleration);
@@ -193,6 +193,7 @@ public class Crouching : MonoBehaviour
 
     public void Slam(Collision other)
     {
+        Debug.Log("slam");
         if (!canSlam)
             return;
         canSlam = false;
